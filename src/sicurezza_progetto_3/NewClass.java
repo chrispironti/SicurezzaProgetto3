@@ -11,4 +11,5 @@ package sicurezza_progetto_3;
  */
 public class NewClass {
     
+    private int chris;
 }
