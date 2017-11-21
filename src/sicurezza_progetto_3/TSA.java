@@ -70,7 +70,7 @@ public class TSA {
     Se il numero di richieste è inferiore a 8 il metodo deve inserire nel Merkel
     Tree i nodi rimanenti con hash fittizi.*/
     
-    public HashMap<String,TSAResponse> generateTimestamp(ArrayList<TSARequest> requests){
+    public HashMap<String,ArrayList<TSAResponse>> generateTimestamp(HashMap<String,ArrayList<TSARequest>> requests){
         
     }
 }

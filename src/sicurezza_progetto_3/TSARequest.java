@@ -5,6 +5,8 @@
  */
 package sicurezza_progetto_3;
 
+import org.json.JSONObject;
+
 /**
 
  */
@@ -18,7 +20,7 @@ public class TSARequest {
     usando la propria chiave DSA privata, lo cifra con la chiave RSA pubblica 
     del server TSA, e lo converte in stringa mettendolo nel campo info    
     */
-    public TSARequest(User user, JSONObject j){
+    public TSARequest(User user, byte[] messageHash){
         
     }
 }

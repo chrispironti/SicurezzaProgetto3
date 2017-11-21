@@ -7,6 +7,11 @@ package sicurezza_progetto_3;
 import java.security.*;
 import javax.crypto.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.json.JSONObject;
+import java.security.Signature;
+import java.security.SignatureException;
 
 
 /**
@@ -34,8 +39,8 @@ public class TimestampManager {
     private int requestsNumber; //Numero di richieste nel Time Frame i
     private int IDNumber; //Inizializzato a 0, lo incrementiamo per ogni utente che fa le richieste
     private TSA TSAServer; //TSA Server
-    private HashMap<String,TSARequest[]> requests;
-    private HashMap<String,TSAResponse[]> responses;
+    private HashMap<String,ArrayList<TSARequest>> requests; //map in cui la chiave è l'id dell'utente, il valore è una lista di richieste fatte da quell'utente
+    private HashMap<String,ArrayList<TSAResponse>> responses;
     
     public TimestampManager(String hashAlgorithm, TSA TSAServer){
         this.hashAlgorithm = hashAlgorithm;
@@ -43,25 +48,54 @@ public class TimestampManager {
         this.requestsNumber = 0;
         this.IDNumber = 0;
         this.requests = null;
+        this.responses = null;
     }
     
     public void newTimeframe(int requestsNumber){
         this.requestsNumber = 0;
         this.requests = new HashMap<>();
-        this.requests = new HashMap<>();
+        this.responses = new HashMap<>();
     }
     
     /*Il metodo riceve un oggetto utente e il messaggio a cui vuole apporre la 
-    marca temporale. Il metodo genera l'hash di message e salva lui e l'id dell'
-    utente in un JSONObject e lo passa al costruttore di TSARequest. 
-    In TSARequest il JSONObject viene firmato e cifrato. 
+    marca temporale. Il metodo genera l'hash di message e passa l'hash e 
+    l'oggetto User al costruttore di TSARequest. 
+    In TSARequest vengono inseriti in un JSONObject il quale viene firmato e cifrato. 
     La TSARequest viene poi inserita nella map come chiave l'id dell'utente e come
-    valore l'oggetto TSARequest. Se più di un utente richiede una marca, le TSARequest
+    valore l'oggetto TSARequest. Se un utente richiede più di una marca, le TSARequest
     vengono salvate in un array. Se il numero di richieste ha raggiunto il numero
     massimo consentito (8) chiama sendRequests.
     */
     public void generateRequest(User user, byte[] message){
-        //provaeisa
+        requestsNumber += 1;
+
+        //Calcolo hash del messaggio
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance(hashAlgorithm); //MD5 SHA-1 SHA-256
+        } catch (NoSuchAlgorithmException ex) {
+            System.out.println("Algoritmo non supportato");
+        }
+        md.update(message);
+        byte[] messageHash = md.digest();
+        
+        //Crea la richiesta
+        TSARequest req = new TSARequest(user, messageHash);
+        
+        //Controllo nella map delle richieste
+        //Se l'user ha già delle richieste aggiunge la richiesta nell'ArrayList
+        if(requests.containsKey(user.getID())){
+            requests.get(user.getID()).add(req);
+        }
+        else{ //Altrimenti crea un ArrayList con la richiesta dell'utente
+            ArrayList<TSARequest> reqList = new ArrayList<>();
+            reqList.add(req);
+            requests.put(user.getID(), reqList);
+        }
+        
+        if (requestsNumber == 8){
+            this.sendRequests();
+        }   
     }
     
     /*Manda la map di richieste al server TSA e salva le risposte nella mappa
@@ -69,13 +103,40 @@ public class TimestampManager {
     o automaticamente da generateRequest quando il numero max di richieste è stato raggiunto.
     */
     public void sendRequests(){
-        
+        responses=TSAServer.generateTimestamp(requests);      
     }
     
     /*
     Lancia un'eccezione per l utente i-esimo se 
     la sua marca non è verificata*/ 
     public void verifyResponse(User user){
+        //Per ogni richiesta associata all'user
+        for (TSAResponse r: this.responses.get(user.getID())){
+            //Verifica della firma
+            Signature dsa = null;
+            try {
+                dsa = Signature.getInstance(r.signType);
+            } catch (NoSuchAlgorithmException ex) {
+                System.out.println("Algoritmo non supportato");
+            }
+            dsa.initVerify(user.getDSAPrivateKey()); //public key
+            dsa.update(r.info); //r.info.getBytes("UTF8")
+            Boolean verified=false;
+            try {
+                verified = dsa.verify(r.sign);
+            } catch (SignatureException ex) {
+                System.out.println("Errore nella verifica della firma");
+            }
+                
+            if(verified){
+                //TSAServer.rootHash;
+                //TSAServer.superRootHash;
+                //verifyInformation
+            } else{
+                System.out.println("Firma non verificata");
+            }
+            
+        }
  
     }
 }
