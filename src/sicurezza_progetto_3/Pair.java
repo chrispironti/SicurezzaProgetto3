@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 package sicurezza_progetto_3;
-
+ 
 /**
  *
  * Classe tupla. Mi serve per costruire le informazioni da dare all'utente
