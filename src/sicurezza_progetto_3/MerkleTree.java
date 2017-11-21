@@ -7,6 +7,7 @@ package sicurezza_progetto_3;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Base64;
 
 /**
  * Utilities per la gestione del Merkel_Tree.
@@ -18,46 +19,41 @@ import java.util.ArrayList;
  * Ho già pensato a una semplice implementazione basata su Array e buttato giù 
  * qualcosa a penna, niente di che. * 
  */
-public class MerkelTree {
+public class MerkleTree {
     
-   byte[][] tree; //Array bidimensionale. Ogni elemento è un array di byte
-   String hash; //Algoritmo di hash del server TSA
+   private byte[][] tree; //Array bidimensionale. Ogni elemento è un array di byte
+   private String hash; //Algoritmo di hash del server TSA
+   private int size;
    
-   public MerkelTree(String hash){
+   public MerkleTree(String hash){
     this.tree = new byte[15][];
     this.hash = hash;
+    this.size = 0;
 }
    
-   public void insert(int pos, byte[] elem){
-       this.tree[pos] = elem;
+   public void insert(byte[] elem){
+       this.tree[this.size] = elem;
+       this.size += 1;
    }
    
-   public byte[] buildMerkelTree() throws NoSuchAlgorithmException{
+   public byte[] buildMerkleTree() throws NoSuchAlgorithmException{
        int j = 8;
        MessageDigest md = MessageDigest.getInstance(hash);
        for(int i = 0; i < 14 ; i+=2){
-           md.update(arrayConcat(tree[i],tree[i+1]));
-           insert(j,md.digest());
+           md.update(byteUtils.arrayConcat(tree[i],tree[i+1]));
+           insert(md.digest());
            j += 1;
        }
        return tree[j]; //Ritorna la radice, cioè HVi
    }
    
-   private byte[] arrayConcat(byte[] array1, byte[] array2){
-       byte[] array1and2 = new byte[array1.length + array2.length];
-       System.arraycopy(array1, 0, array1and2, 0, array1.length);
-       System.arraycopy(array2, 0, array1and2, array1.length, array2.length);
-       return array1and2;
-   }
    
    /*Costruisce le informazioni per ciascun utente per poter verificare HV. Ritorna
    un array di Arraylist, ove ogni elemento è un arraylist contenente tre tuple che,
    nell'ordine, dicono con chi e in che posizione concatenare il proprio hash per
    ottenere il root hash value.*/
-   public ArrayList<Pair>[] buildInfo(){
-       ArrayList<Pair>[] info = new ArrayList[8];
-       for(int i = 0; i < info.length; i++ )
-        info[i] = new ArrayList<>();
+   public ArrayList<String> buildInfo(){
+       ArrayList<String> info = new ArrayList<>();
        String str1 = "dx";
        String str2 = "dx";
        String str3 = "dx";
@@ -65,10 +61,11 @@ public class MerkelTree {
            int sibling = sibling(k);
            int father = parent(k);
            int grandfather = parent(father);
-           info[k].add(new Pair(tree[sibling], evalpos1(k)));
-           info[k].add(new Pair(tree[sibling(father)], evalpos2(k)));
-           info[k].add(new Pair(tree[sibling(grandfather)], evalpos3(k)));
-           
+           String infostr = "";
+           infostr += Base64.getEncoder().encodeToString(tree[sibling]) + "," + evalpos1(k)+",";
+           infostr += Base64.getEncoder().encodeToString(tree[sibling(father)]) + "," + evalpos2(k)+",";
+           infostr += Base64.getEncoder().encodeToString(tree[sibling(grandfather)]) + "," + evalpos3(k);
+           info.add(infostr);
        }
        return info;
    }
@@ -106,5 +103,9 @@ public class MerkelTree {
        if (k >=4)
            return "sx";
        return "dx";
+   }
+   
+   public int getSize(){
+       return this.size;
    }
 }

@@ -11,7 +11,7 @@ import org.json.JSONObject;
 
  */
 public class TSARequest {
-    public String info;
+    public byte[] info;
     public byte[] sign;
     public String signType;
     
