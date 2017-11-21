@@ -14,8 +14,34 @@ import javax.crypto.*;
 public class User {
     private String ID;
     private byte[] password;
+    private byte[] salt;
     private PrivateKey DSAPrivateKey;
     private PrivateKey RSAPrivateKey;
+
+    public User(byte[] password, String KeychainFile) {
+        this.password = password;
+    }
+
+    public String getID() {
+        return ID;
+    }
+
+    public byte[] getPassword() {
+        return password;
+    }
+
+    public byte[] getSalt() {
+        return salt;
+    }
+
+    public PrivateKey getDSAPrivateKey() {
+        return DSAPrivateKey;
+    }
+
+    public PrivateKey getRSAPrivateKey() {
+        return RSAPrivateKey;
+    }
+    
     
     
 }
