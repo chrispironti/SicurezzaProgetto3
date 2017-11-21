@@ -85,7 +85,6 @@ public class TSA {
     
     private void verifyText(byte[] plaintext, byte[] firmaDSA, String tipofirma, PublicKey DSAKeyPub) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, NotVerifiedSignException{
 
-        Boolean verified=false;
         Signature dsa = Signature.getInstance(tipofirma);
         dsa.initVerify(DSAKeyPub);
         dsa.update(plaintext);
