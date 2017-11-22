@@ -43,13 +43,13 @@ public class TSA {
     private User TSAUser;
 
     
-    public TSA(char[] password, String keychainFilePriv, String keychainFilePub) throws NoSuchAlgorithmException, IOException{
+    public TSA(char[] password, String keychainTSA, String keychainFilePub) throws NoSuchAlgorithmException, IOException{
         this.serialNumber = 0;
         this.timeframe = 0;
         this.rootHash = new ArrayList<>();
         this.superRootHash = new ArrayList<>();
         computeSuperHashValue();
-        this.TSAUser = new User("TSA", password, keychainFilePriv, keychainFilePub);
+        this.TSAUser = new User("TSA", password, keychainTSA, keychainFilePub);
     }
     
     public void newTimeFrame(){
