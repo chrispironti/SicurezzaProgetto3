@@ -119,7 +119,7 @@ public class TimestampManager {
             } catch (NoSuchAlgorithmException ex) {
                 System.out.println("Algoritmo non supportato");
             }
-            dsa.initVerify(user.getDSAPrivateKey()); //public key
+            dsa.initVerify(user.getDsaPubKey()); //public key
             dsa.update(r.info); //r.info.getBytes("UTF8")
             Boolean verified=false;
             try {

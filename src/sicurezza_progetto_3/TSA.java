@@ -4,6 +4,7 @@
  * and open the template in the editor.
  */
 package sicurezza_progetto_3;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.sql.Timestamp;
@@ -36,17 +37,19 @@ public class TSA {
     //MerkelTree per il timeframe i-esimo
     private MerkleTree mt; 
     //Pubblichiamo i valori di HV e SHV a ogni timeframe
-    public ArrayList<byte[]> rootHash;
-    public ArrayList<byte[]> superRootHash;
+    private ArrayList<byte[]> rootHash;
+    private ArrayList<byte[]> superRootHash;
     public final int DUMMYSIZE = 10;
+    private User TSAUser;
 
     
-    public TSA() throws NoSuchAlgorithmException{
+    public TSA(char[] password, String keychainFilePriv, String keychainFilePub) throws NoSuchAlgorithmException, IOException{
         this.serialNumber = 0;
         this.timeframe = 0;
         this.rootHash = new ArrayList<>();
         this.superRootHash = new ArrayList<>();
         computeSuperHashValue();
+        this.TSAUser = new User("TSA", password, keychainFilePriv, keychainFilePub);
     }
     
     public void newTimeFrame(){
@@ -72,9 +75,9 @@ public class TSA {
     Se il numero di richieste è inferiore a 8 il metodo deve inserire nel Merkel
     Tree i nodi rimanenti con hash fittizi.*/
     
-    public HashMap<String,ArrayList<TSAResponse>> generateTimestamp(HashMap<String,ArrayList<TSARequest>> requests, PrivateKey rsaprivKey, PublicKey dsapubkey) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException{
+    public HashMap<String,ArrayList<TSAResponse>> generateTimestamp(HashMap<String,ArrayList<TSARequest>> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         
-        HashMap<String,ArrayList<JSONObject>> partialResponses = createResponses(requests,rsaprivKey, dsapubkey);
+        HashMap<String,ArrayList<JSONObject>> partialResponses = createResponses(requests);
         byte[] hashValue = mt.buildMerkleTree();
         this.rootHash.add(hashValue);
         computeSuperHashValue();
@@ -107,8 +110,10 @@ public class TSA {
         return responseInfo;
     }
     
-    private HashMap<String,ArrayList<JSONObject>> createResponses(HashMap<String,ArrayList<TSARequest>> requests, PrivateKey rsaprivKey, PublicKey dsapubkey) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException{
+    private HashMap<String,ArrayList<JSONObject>> createResponses(HashMap<String,ArrayList<TSARequest>> requests) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IOException, BadPaddingException{
         
+        PrivateKey rsaprivKey = this.TSAUser.getRsaPrivKey();
+        JSONObject pubKeys = KeychainUtils.getPubKeychain(keyChainFilePub);
         HashMap<String,ArrayList<JSONObject>> partialResponses = new HashMap<>();
         Cipher c = Cipher.getInstance("RSA/ECB/OAEPPadding");
         c.init(Cipher.DECRYPT_MODE, rsaprivKey);
@@ -119,15 +124,16 @@ public class TSA {
         */
         for(Map.Entry<String,ArrayList<TSARequest>> e: requests.entrySet()){
             ArrayList<JSONObject> objArray = new ArrayList<>();
+            
             for(TSARequest req: e.getValue()){
                 try{
+                    this.serialNumber += 1;
                     byte[] decrypted = c.doFinal(req.info); //Da Aggiustare
                     verifyText(decrypted, req.sign, req.signType, dsapubkey);
                     JSONObject userInfo = new JSONObject(new String(decrypted,"UTF8"));
                     JSONObject responseInfo = makeResponseInfo(userInfo, md);
                     this.mt.insert(Base64.getDecoder().decode(userInfo.getString("MessageDigest")));
                     objArray.add(responseInfo);
-                    this.serialNumber += 1;
                     requestNumber += 1;
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
                     System.out.println("Errore. Impossibile processare richiesta numero: " + requestNumber + 
@@ -144,7 +150,7 @@ public class TSA {
         poi calcola HV e le info per ciascun utente. */
         Random r = new Random();
         while (requestNumber < 8){
-            byte[] dummy = new byte[256];
+            byte[] dummy = new byte[this.DUMMYSIZE];
             r.nextBytes(dummy);
             md.update(dummy);
             this.mt.insert(md.digest());
@@ -177,9 +183,18 @@ public class TSA {
             shv_i = new byte[this.DUMMYSIZE];
             r.nextBytes(shv_i);    
         }else
-            shv_i = byteUtils.arrayConcat(this.rootHash.get(this.timeframe), 
-                    this.superRootHash.get(this.timeframe - 1));
+            shv_i = byteUtils.arrayConcat(this.superRootHash.get(this.timeframe - 1), 
+                    this.rootHash.get(this.timeframe));
         md.update(shv_i);
         this.superRootHash.add(md.digest());
     }
+    
+    public byte[] getHashValue(int timeframe){
+        return this.rootHash.get(timeframe);
+    }
+    
+    public byte[] getSuperHashValue(int timeframe){
+        return this.superRootHash.get(timeframe);
+    }   
+    
 }
