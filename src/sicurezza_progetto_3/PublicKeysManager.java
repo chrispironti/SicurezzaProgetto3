@@ -5,6 +5,9 @@
  */
 package sicurezza_progetto_3;
 
+import java.io.IOException;
+import org.json.JSONObject;
+
 /**
  *
  * @author gennaroavitabile
@@ -12,13 +15,13 @@ package sicurezza_progetto_3;
 public class PublicKeysManager {
    
     private static PublicKeysManager  pkm = null;
-    private String fileChiaviPubbliche;
+    private JSONObject jPubDatabase;
     
-    private PublicKeysManager(String fileChiaviPubbliche) {
-        this.fileChiaviPubbliche=fileChiaviPubbliche;
+    private PublicKeysManager(String fileChiaviPubbliche) throws IOException{
+        this.jPubDatabase=KeychainUtils.getPubKeychain(fileChiaviPubbliche);
     }
     
-    public static synchronized PublicKeysManager getPublicKeysManager(){
+    public static synchronized PublicKeysManager getPublicKeysManager() throws IOException{
         if(pkm == null){
            pkm = new PublicKeysManager("Nomedelfile"); 
         }

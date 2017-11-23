@@ -125,18 +125,55 @@ public class KeychainUtils {
             return new JSONObject(s);
     }
     
-    public static JSONObject getPubKeychain(String KeychainFilePub) throws IOException, ClassNotFoundException{
+    public static JSONObject getPubKeychain(String KeychainFilePub) throws IOException{
         ObjectInputStream ois=null;
         String s=null;
         try {
             ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(KeychainFilePub))); 
             s = (String) ois.readObject();
             ois.close();
-      	}finally{
+      	}catch(ClassNotFoundException e){
+            e.printStackTrace();
+            System.exit(1);
+        }
+        finally{
             if(ois!=null){
                 ois.close();
             }
         }
         return new JSONObject(s); 
     }
+    
+    public static JSONObject createEmptyKeycahin(char[] password,String fileChiaviPrivate) throws IOException{
+        
+        JSONObject jKeychain= new JSONObject("{}");
+        SecureRandom random = new SecureRandom();
+        byte salt[] = new byte[11];
+	random.nextBytes(salt);
+        byte iv[]= new byte[11];
+        random.nextBytes(iv);
+        ObjectOutputStream oos = null;
+        try{
+        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+        KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
+        SecretKey tmp = factory.generateSecret(keySpec);
+        SecretKey secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+        Cipher cipher = Cipher.getInstance("AES/CFB/PKCS5Padding");
+        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));    
+        oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPrivate)));
+        SealedObject so = new SealedObject(jKeychain.toString(),cipher);
+        oos.write(salt);
+        oos.write(iv);
+        oos.writeObject(so);
+        }catch(NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException ex) {
+                ex.printStackTrace();
+                System.exit(1);
+        }
+        finally{
+            if(oos!=null){
+                oos.close();
+            }
+        } 
+        return jKeychain;
+    }   
 }

@@ -5,10 +5,37 @@
  */
 package sicurezza_progetto_3;
 
+import java.io.IOException;
+import org.json.JSONObject;
+
 /**
  *
  * @author gennaroavitabile
  */
 public class Keychain {
+    
+    JSONObject jKeyChain;
+
+    public Keychain(String KeychainFile, char[] password, boolean isold) throws IOException {   
+        if(isold){
+            jKeyChain=KeychainUtils.decryptKeychain(password, KeychainFile);
+        }
+        else{
+            jKeyChain=KeychainUtils.createEmptyKeycahin(password, KeychainFile);
+        } 
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
 }
