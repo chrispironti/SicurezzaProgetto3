@@ -10,16 +10,17 @@ package sicurezza_progetto_3;
  * @author gennaroavitabile
  */
 public class PublicKeysManager {
-    
+   
     private static PublicKeysManager  pkm = null;
-    private String fileChiaviPubbliche = "";
+    private String fileChiaviPubbliche;
     
-    private PublicKeysManager() {
+    private PublicKeysManager(String fileChiaviPubbliche) {
+        this.fileChiaviPubbliche=fileChiaviPubbliche;
     }
     
     public static synchronized PublicKeysManager getPublicKeysManager(){
         if(pkm == null){
-           pkm = new PublicKeysManager(); 
+           pkm = new PublicKeysManager("Nomedelfile"); 
         }
         return pkm;
     }

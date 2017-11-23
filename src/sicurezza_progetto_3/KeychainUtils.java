@@ -19,9 +19,9 @@ import org.json.*;
  */
 public class KeychainUtils {
     
-    
-    public static void generateKeyPairs(char[] password, String fileChiaviPubbliche, String fileChiaviPrivate) throws IOException{
+    public static void generateKeyPairs(char[] password, String fileChiaviPubbliche, Map<String,String> filesChiaviPrivate) throws IOException{
         
+        JSONObject jPubDatabase = new JSONObject();
         JSONObject jpub = new JSONObject();
         JSONObject jpriv = new JSONObject();
         SecureRandom random = new SecureRandom();
@@ -31,7 +31,8 @@ public class KeychainUtils {
         random.nextBytes(iv);
         ObjectOutputStream oos = null;
         
-            try {     
+        for(Map.Entry<String,String> e: filesChiaviPrivate.entrySet()){
+            try {
                 SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
                 KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
                 SecretKey tmp = factory.generateSecret(keySpec);
@@ -61,22 +62,32 @@ public class KeychainUtils {
                 jpub.put("ChiaveDSA2048Pub", Base64.getEncoder().encodeToString(DSAKeys2048.getPublic().getEncoded()));
                 jpriv.put("ChiaveDSA2048Priv", Base64.getEncoder().encodeToString(DSAKeys2048.getPrivate().getEncoded()));
                 SealedObject so = new SealedObject(jpriv.toString(),cipher);
-                oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPrivate)));
+                oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(e.getValue())));
                 oos.write(salt);
                 oos.write(iv);
                 oos.writeObject(so);
-                oos.close();   
-                oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPubbliche)));
-                oos.writeObject(jpub.toString());
-                oos.close(); 
-            } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException e) {
-                e.printStackTrace();
+                oos.close();
+                jPubDatabase.put(e.getKey(), jpub.toString());
+
+            }catch(NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException ex) {
+                ex.printStackTrace();
                 System.exit(1);
             }finally{
                 if(oos!=null){
                     oos.close();
                 }
-            }    
+            }  
+        }
+        oos=null;
+        try{
+        oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPubbliche)));
+        oos.writeObject(jPubDatabase.toString());
+        oos.close(); 
+        }finally{
+        if(oos!=null){
+            oos.close();
+            }  
+        }    
     }
     
     public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate) throws IOException{
@@ -114,7 +125,18 @@ public class KeychainUtils {
             return new JSONObject(s);
     }
     
-    public static JSONObject getPubKeychain(String KeychainFilePub){
-        
+    public static JSONObject getPubKeychain(String KeychainFilePub) throws IOException, ClassNotFoundException{
+        ObjectInputStream ois=null;
+        String s=null;
+        try {
+            ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(KeychainFilePub))); 
+            s = (String) ois.readObject();
+            ois.close();
+      	}finally{
+            if(ois!=null){
+                ois.close();
+            }
+        }
+        return new JSONObject(s); 
     }
 }
