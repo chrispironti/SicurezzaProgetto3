@@ -16,16 +16,11 @@ import org.json.JSONObject;
 public class Keychain {
     
     JSONObject jKeyChain;
-    String keychainFile;
 
-    public Keychain(String keychainFile, char[] password, boolean isold) throws IOException {   
-        this.keychainFile=keychainFile;
-        if(isold){
-            jKeyChain=KeychainUtils.decryptKeychain(password, keychainFile);
-        }
-        else{
-            jKeyChain=KeychainUtils.createEmptyKeychain(password, keychainFile);
-        } 
+
+    public Keychain(String keychainFile, char[] password) throws IOException {   
+        jKeyChain=KeychainUtils.decryptKeychain(password, keychainFile);
+        jKeyChain=KeychainUtils.createEmptyKeychain(password, keychainFile);  
     }    
   
  
@@ -37,18 +32,7 @@ public class Keychain {
         
     }
     
-    public void addPrivateKey(String identifier, PrivateKey pk){
-        
-    }
-    
-    public void addPassword(String identifier, String password){
-        
-    }
-    
-    public void store(){
-        
-    }
-    
+
     
     
     

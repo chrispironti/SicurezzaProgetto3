@@ -29,16 +29,9 @@ public class KeychainUtils {
 	random.nextBytes(salt);
         byte iv[]= new byte[11];
         random.nextBytes(iv);
-        ObjectOutputStream oos = null;
         
         for(Map.Entry<String,String> e: filesChiaviPrivate.entrySet()){
-            try {
-                SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-                KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
-                SecretKey tmp = factory.generateSecret(keySpec);
-                SecretKey secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-                Cipher cipher = Cipher.getInstance("AES/CFB/PKCS5Padding");
-                cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));
+            try{
                 KeyPairGenerator keyPairGenerator = null;
                 keyPairGenerator = KeyPairGenerator.getInstance("RSA");
                 keyPairGenerator.initialize(1024,random);
@@ -61,24 +54,14 @@ public class KeychainUtils {
                 KeyPair DSAKeys2048 = keyPairGenerator.generateKeyPair();
                 jpub.put("ChiaveDSA2048Pub", Base64.getEncoder().encodeToString(DSAKeys2048.getPublic().getEncoded()));
                 jpriv.put("ChiaveDSA2048Priv", Base64.getEncoder().encodeToString(DSAKeys2048.getPrivate().getEncoded()));
-                SealedObject so = new SealedObject(jpriv.toString(),cipher);
-                oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(e.getValue())));
-                oos.write(salt);
-                oos.write(iv);
-                oos.writeObject(so);
-                oos.close();
+                writeKeychain(jpriv, salt, iv, password, fileChiaviPubbliche);
                 jPubDatabase.put(e.getKey(), jpub.toString());
-
-            }catch(NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException ex) {
+            }catch(NoSuchAlgorithmException ex){
                 ex.printStackTrace();
                 System.exit(1);
-            }finally{
-                if(oos!=null){
-                    oos.close();
-                }
-            }  
+            }    
         }
-        oos=null;
+        ObjectOutputStream oos=null;
         try{
         oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPubbliche)));
         oos.writeObject(jPubDatabase.toString());
@@ -100,21 +83,15 @@ public class KeychainUtils {
         byte iv[]= new byte[11];
         String s=null;
         try {
-            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
             ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileChiaviPrivate)));
             ois.read(salt);
             ois.read(iv);
-            KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
-            SecretKey tmp = factory.generateSecret(keySpec);
-            SecretKey secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-            Cipher cipher = Cipher.getInstance("AES/CFB/PKCS5Padding");
-            cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
+            Cipher cipher = cipherFromPass(salt, iv, password);
             SealedObject so= (SealedObject) ois.readObject();
             s= (String)so.getObject(cipher);
             ois.close();
-	} catch (ClassNotFoundException|NoSuchAlgorithmException | InvalidKeySpecException | 
-                NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | 
-                InvalidAlgorithmParameterException | BadPaddingException e ) {
+	} catch (ClassNotFoundException| IllegalBlockSizeException | 
+               BadPaddingException e ) {
             e.printStackTrace();
             System.exit(1);
       	}finally{
@@ -144,28 +121,43 @@ public class KeychainUtils {
         return new JSONObject(s); 
     }
     
-    public static JSONObject createEmptyKeychain(char[] password,String fileChiaviPrivate) throws IOException{
-        
+    public static JSONObject createEmptyKeychain(char[] password,String fileChiaviPrivate) throws IOException{   
         JSONObject jKeychain= new JSONObject("{}");
         SecureRandom random = new SecureRandom();
         byte salt[] = new byte[11];
 	random.nextBytes(salt);
         byte iv[]= new byte[11];
         random.nextBytes(iv);
+        writeKeychain(jKeychain, salt, iv, password, fileChiaviPrivate);
+        return jKeychain;
+    }   
+    
+    private static Cipher cipherFromPass(byte[] salt, byte[] iv, char[] password){
+        Cipher cipher=null;
+        try{
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
+            SecretKey tmp = factory.generateSecret(keySpec);
+            SecretKey secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+            cipher = Cipher.getInstance("AES/CFB/PKCS5Padding");
+            cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));
+        }catch(NoSuchAlgorithmException | InvalidAlgorithmParameterException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException e){
+                e.printStackTrace();
+                System.exit(1);
+        }
+        return cipher;
+    }
+    
+    private static void writeKeychain(JSONObject keychain, byte[] salt, byte[] iv, char[] password, String fileChiaviPrivate) throws IOException{
         ObjectOutputStream oos = null;
         try{
-        SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
-        KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
-        SecretKey tmp = factory.generateSecret(keySpec);
-        SecretKey secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
-        Cipher cipher = Cipher.getInstance("AES/CFB/PKCS5Padding");
-        cipher.init(Cipher.ENCRYPT_MODE, secretKey, new IvParameterSpec(iv));    
+        Cipher cipher= cipherFromPass(salt, iv, password);
         oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPrivate)));
-        SealedObject so = new SealedObject(jKeychain.toString(),cipher);
+        SealedObject so = new SealedObject(keychain.toString(),cipher);
         oos.write(salt);
         oos.write(iv);
         oos.writeObject(so);
-        }catch(NoSuchAlgorithmException | InvalidAlgorithmParameterException | IllegalBlockSizeException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException ex) {
+        }catch(IllegalBlockSizeException ex) {
                 ex.printStackTrace();
                 System.exit(1);
         }
@@ -173,12 +165,27 @@ public class KeychainUtils {
             if(oos!=null){
                 oos.close();
             }
-        } 
-        return jKeychain;
-    }   
-    
-    
-    public static void updateEncryptedKeychain(JSONObject keychain, char[] password, String fileChiaviPrivate){
+        }  
+
+    }
+
+    private static void addPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password){
         
     }
+    
+    private static void addKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password){
+        
+    }
+    
+    private static void rmvPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password){
+        
+    }
+    
+    private static void rmvKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password){
+        
+    }
+
 }
+
+
+
