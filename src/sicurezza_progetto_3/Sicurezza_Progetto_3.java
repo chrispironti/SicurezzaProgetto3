@@ -4,7 +4,7 @@
  * and open the template in the editor.
  */
 package sicurezza_progetto_3;
-
+ import java.sql.Timestamp;
 /**
  *
  * @author Daniele
@@ -17,6 +17,8 @@ public class Sicurezza_Progetto_3 {
     public static void main(String[] args) {
         // TODO code application logic here
         System.out.println(0%2);
+        for(int i=0; i<100; i++)
+            System.out.println(new Timestamp(System.currentTimeMillis()+i*10000));
     }
     
 }

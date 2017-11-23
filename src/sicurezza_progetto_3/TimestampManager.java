@@ -4,14 +4,10 @@
  * and open the template in the editor.
  */
 package sicurezza_progetto_3;
+import java.io.*;
 import java.security.*;
 import javax.crypto.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import org.json.JSONObject;
-import java.security.Signature;
-import java.security.SignatureException;
 
 
 /**
@@ -66,21 +62,21 @@ public class TimestampManager {
     vengono salvate in un array. Se il numero di richieste ha raggiunto il numero
     massimo consentito (8) chiama sendRequests.
     */
-    public void generateRequest(User user, byte[] message){
+    public void generateRequest(User user, byte[] message, String signType) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         requestsNumber += 1;
 
-        //Calcolo hash del messaggio
+        //Calcolo digest del messaggio
         MessageDigest md = null;
         try {
-            md = MessageDigest.getInstance(hashAlgorithm); //MD5 SHA-1 SHA-256
+            md = MessageDigest.getInstance(hashAlgorithm);
         } catch (NoSuchAlgorithmException ex) {
             System.out.println("Algoritmo non supportato");
         }
         md.update(message);
-        byte[] messageHash = md.digest();
+        byte[] msgDigest = md.digest();
         
         //Crea la richiesta
-        TSARequest req = new TSARequest(user, messageHash);
+        TSARequest req = new TSARequest(user, msgDigest, signType);
         
         //Controllo nella map delle richieste
         //Se l'user ha già delle richieste aggiunge la richiesta nell'ArrayList
@@ -102,14 +98,14 @@ public class TimestampManager {
     corrispondente della classe. Può essere chiamato in un qualunque momento dall'utente
     o automaticamente da generateRequest quando il numero max di richieste è stato raggiunto.
     */
-    public void sendRequests(){
+    public void sendRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         responses=TSAServer.generateTimestamp(requests);      
     }
     
     /*
     Lancia un'eccezione per l utente i-esimo se 
     la sua marca non è verificata*/ 
-    public void verifyResponse(User user){
+    public void verifyResponse(User user) throws UnsupportedEncodingException, IOException, InvalidKeyException, SignatureException{
         //Per ogni richiesta associata all'user
         for (TSAResponse r: this.responses.get(user.getID())){
             //Verifica della firma
@@ -119,8 +115,8 @@ public class TimestampManager {
             } catch (NoSuchAlgorithmException ex) {
                 System.out.println("Algoritmo non supportato");
             }
-            dsa.initVerify(user.getDsaPubKey()); //public key
-            dsa.update(r.info); //r.info.getBytes("UTF8")
+            dsa.initVerify(); //TSA Public Key
+            dsa.update(r.info);  //r.info.getBytes?
             Boolean verified=false;
             try {
                 verified = dsa.verify(r.sign);
