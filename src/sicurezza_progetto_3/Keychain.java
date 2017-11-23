@@ -6,6 +6,7 @@
 package sicurezza_progetto_3;
 
 import java.io.IOException;
+import java.security.PrivateKey;
 import org.json.JSONObject;
 
 /**
@@ -15,23 +16,38 @@ import org.json.JSONObject;
 public class Keychain {
     
     JSONObject jKeyChain;
+    String keychainFile;
 
-    public Keychain(String KeychainFile, char[] password, boolean isold) throws IOException {   
+    public Keychain(String keychainFile, char[] password, boolean isold) throws IOException {   
+        this.keychainFile=keychainFile;
         if(isold){
-            jKeyChain=KeychainUtils.decryptKeychain(password, KeychainFile);
+            jKeyChain=KeychainUtils.decryptKeychain(password, keychainFile);
         }
         else{
-            jKeyChain=KeychainUtils.createEmptyKeycahin(password, KeychainFile);
+            jKeyChain=KeychainUtils.createEmptyKeychain(password, keychainFile);
         } 
+    }    
+  
+ 
+    public PrivateKey getPrivateKey(String identifier){
+        
     }
     
+    public String getPassword(String identifier){
+        
+    }
     
+    public void addPrivateKey(String identifier, PrivateKey pk){
+        
+    }
     
+    public void addPassword(String identifier, String password){
+        
+    }
     
-    
-    
-    
-    
+    public void store(){
+        
+    }
     
     
     

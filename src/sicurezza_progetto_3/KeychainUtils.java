@@ -144,7 +144,7 @@ public class KeychainUtils {
         return new JSONObject(s); 
     }
     
-    public static JSONObject createEmptyKeycahin(char[] password,String fileChiaviPrivate) throws IOException{
+    public static JSONObject createEmptyKeychain(char[] password,String fileChiaviPrivate) throws IOException{
         
         JSONObject jKeychain= new JSONObject("{}");
         SecureRandom random = new SecureRandom();
@@ -176,4 +176,9 @@ public class KeychainUtils {
         } 
         return jKeychain;
     }   
+    
+    
+    public static void updateEncryptedKeychain(JSONObject keychain, char[] password, String fileChiaviPrivate){
+        
+    }
 }
