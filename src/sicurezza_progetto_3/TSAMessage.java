@@ -72,4 +72,12 @@ public class TSAMessage {
                 System.exit(1);
         }
     }
+
+    public byte[] getInfo() {
+        return info;
+    }
+
+    public byte[] getSign() {
+        return sign;
+    }
 }

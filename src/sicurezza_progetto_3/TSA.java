@@ -71,7 +71,7 @@ public class TSA {
     Se il numero di richieste è inferiore a 8 il metodo deve inserire nel Merkel
     Tree i nodi rimanenti con hash fittizi.*/
     
-    public HashMap<String,ArrayList<TSAResponse>> generateTimestamp(HashMap<String,ArrayList<TSARequest>> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
+    public ArrayList<TSAMessage> generateTimestamp(ArrayList<TSAMessage> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         
         this.mt = new MerkleTree(this.hashAlgorithm);
         this.timeframe += 1;
