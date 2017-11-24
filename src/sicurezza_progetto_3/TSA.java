@@ -52,10 +52,6 @@ public class TSA {
         this.TSAUser = new User("TSA", password, keychainTSA, keychainFilePub);
     }
     
-    public void newTimeFrame(){
-        this.mt = new MerkleTree(this.hashAlgorithm);
-        this.timeframe += 1;
-    }
     
     /*Il metodo riceve l'array di richieste a cui apporre il timestamp. Per ogni richiesta,
     decifra il contenuto (con la propria chiave privata RSA), verifica la firma (con la chiave pubblica DSA dell'utente),
@@ -77,11 +73,14 @@ public class TSA {
     
     public HashMap<String,ArrayList<TSAResponse>> generateTimestamp(HashMap<String,ArrayList<TSARequest>> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         
+        this.mt = new MerkleTree(this.hashAlgorithm);
+        this.timeframe += 1;
         HashMap<String,ArrayList<JSONObject>> partialResponses = createResponses(requests);
         byte[] hashValue = mt.buildMerkleTree();
         this.rootHash.add(hashValue);
         computeSuperHashValue();
         ArrayList<String> merkleInfo = mt.buildInfo();
+        saveHashValues();
         return finalizeResponses(partialResponses, merkleInfo);
         
     }
@@ -184,7 +183,7 @@ public class TSA {
             r.nextBytes(shv_i);    
         }else
             shv_i = byteUtils.arrayConcat(this.superRootHash.get(this.timeframe - 1), 
-                    this.rootHash.get(this.timeframe));
+            this.rootHash.get(this.timeframe));
         md.update(shv_i);
         this.superRootHash.add(md.digest());
     }
@@ -197,4 +196,8 @@ public class TSA {
         return this.superRootHash.get(timeframe);
     }   
     
+    
+    private void saveHashValues(){
+        
+    }
 }

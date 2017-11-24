@@ -52,7 +52,7 @@ public class TSAMessage {
     private void signText(byte[] plaintext, PrivateKey DSAPrKey){
         Signature dsa = null;
         try {    
-            dsa = Signature.getInstance("Dsa2048");
+            dsa = Signature.getInstance("SHA256withDSA");
             dsa.initSign(DSAPrKey);
             dsa.update(plaintext);
             sign = dsa.sign();

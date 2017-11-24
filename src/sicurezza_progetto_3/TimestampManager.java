@@ -31,15 +31,14 @@ import java.util.*;
 
 public class TimestampManager {
     
-    private String hashAlgorithm; //Tipo di algoritmo hash che il server TSA deve usare.
     private int requestsNumber; //Numero di richieste nel Time Frame i
     private int IDNumber; //Inizializzato a 0, lo incrementiamo per ogni utente che fa le richieste
     private TSA TSAServer; //TSA Server
-    private HashMap<String,ArrayList<TSAMessage>> requests; //map in cui la chiave è l'id dell'utente, il valore è una lista di richieste fatte da quell'utente
-    private HashMap<String,ArrayList<TSAMessage>> responses;
+    private ArrayList<TSAMessage> requests; //map in cui la chiave è l'id dell'utente, il valore è una lista di richieste fatte da quell'utente
+    private ArrayList<TSAMessage> responses;
+    private ArrayList<String> nomiFiles;
     
-    public TimestampManager(String hashAlgorithm, TSA TSAServer){
-        this.hashAlgorithm = hashAlgorithm;
+    public TimestampManager(TSA TSAServer){
         this.TSAServer = TSAServer;
         this.requestsNumber = 0;
         this.IDNumber = 0;
@@ -47,12 +46,7 @@ public class TimestampManager {
         this.responses = null;
     }
     
-    public void newTimeframe(int requestsNumber){
-        this.requestsNumber = 0;
-        this.requests = new HashMap<>();
-        this.responses = new HashMap<>();
-    }
-    
+
     /*Il metodo riceve un oggetto utente e il messaggio a cui vuole apporre la 
     marca temporale. Il metodo genera l'hash di message e passa l'hash e 
     l'oggetto User al costruttore di TSARequest. 
@@ -62,7 +56,7 @@ public class TimestampManager {
     vengono salvate in un array. Se il numero di richieste ha raggiunto il numero
     massimo consentito (8) chiama sendRequests.
     */
-    public void generateRequest(User user, byte[] message, String signType) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
+    public void generateRequest(String keychainFile, String id, char[] password, String documentFile) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         requestsNumber += 1;
 
         //Calcolo digest del messaggio
@@ -90,7 +84,7 @@ public class TimestampManager {
         }
         
         if (requestsNumber == 8){
-            this.sendRequests();
+            this.processRequests();
         }   
     }
     
@@ -98,14 +92,24 @@ public class TimestampManager {
     corrispondente della classe. Può essere chiamato in un qualunque momento dall'utente
     o automaticamente da generateRequest quando il numero max di richieste è stato raggiunto.
     */
-    public void sendRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
+    public void processRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
+                 
         responses=TSAServer.generateTimestamp(requests);      
+        //chiama un metodo che verifica, decifra e salva rispos
+        this.requestsNumber = 0;
+        this.requests = new HashMap<>();
+        this.responses = new HashMap<>();
+        
     }
+    
+    
+    
     
     /*
     Lancia un'eccezione per l utente i-esimo se 
     la sua marca non è verificata*/ 
-    public void verifyResponse(User user) throws UnsupportedEncodingException, IOException, InvalidKeyException, SignatureException{
+    /*Attenzione usa lista nomi file per salvarli*/
+    public void processResponses() throws UnsupportedEncodingException, IOException, InvalidKeyException, SignatureException{
         //Per ogni richiesta associata all'user
         for (TSAResponse r: this.responses.get(user.getID())){
             //Verifica della firma
@@ -133,6 +137,15 @@ public class TimestampManager {
             }
             
         }
- 
+    }     
+        
+    public boolean verifyOffline(String docFile, String marcaFile){    
+    
     }
+         
+    public boolean verifyOnline(String docFile, String marcaFile, String hashFile){
+        
+    }
+ 
+    
 }

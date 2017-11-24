@@ -198,9 +198,9 @@ public class KeychainUtils {
         }  
 
     }
+        /* L'identificativo è posto per convenzione Pass/Service/AccountOnTheService*/
 
-    /* L'identificativo è posto per convenzione Key/TYPEdim/Service*/
-    private static void addPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password) throws IOException{
+    public static void addPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password) throws IOException{
         byte[] salt= new byte[SALT_SIZE];
         byte[] iv= new byte[IV_SIZE];
         JSONObject keychain = decryptKeychain(password, fileChiaviPrivate,salt,iv);
@@ -210,8 +210,9 @@ public class KeychainUtils {
         writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);
     }
     
-    /* L'identificativo è posto per convenzione Pass/Service/AccountOnTheService*/
-    private static void addKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password) throws IOException{
+        /* L'identificativo è posto per convenzione Key/TYPEdim/Service*/
+
+    public static void addKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password) throws IOException{
         byte[] salt= new byte[SALT_SIZE];
         byte[] iv= new byte[IV_SIZE];
         JSONObject keychain = decryptKeychain(password, fileChiaviPrivate,salt,iv);
@@ -222,7 +223,7 @@ public class KeychainUtils {
     }
     
     /* L'identificativo è posto per convenzione Pass/Service/AccountOnTheService*/
-    private static void rmvInKeychain(String fileChiaviPrivate, List<String> ids, char[] password) throws IOException{
+    public static void rmvInKeychain(String fileChiaviPrivate, List<String> ids, char[] password) throws IOException{
         byte[] salt = new byte[SALT_SIZE];
         byte[] iv= new byte[IV_SIZE];
         JSONObject keychain = decryptKeychain(password, fileChiaviPrivate,salt,iv);
