@@ -19,15 +19,18 @@ import org.json.*;
  */
 public class KeychainUtils {
     
+    public static final int IV_SIZE=11;
+    public static final int SALT_SIZE=11;
+    
     public static void generateKeyPairs(char[] password, String fileChiaviPubbliche, Map<String,String> filesChiaviPrivate) throws IOException{
         
         JSONObject jPubDatabase = new JSONObject();
         JSONObject jpub = new JSONObject();
         JSONObject jpriv = new JSONObject();
         SecureRandom random = new SecureRandom();
-        byte salt[] = new byte[11];
+        byte salt[] = new byte[SALT_SIZE];
 	random.nextBytes(salt);
-        byte iv[]= new byte[11];
+        byte iv[]= new byte[IV_SIZE];
         random.nextBytes(iv);
         
         for(Map.Entry<String,String> e: filesChiaviPrivate.entrySet()){
@@ -73,14 +76,41 @@ public class KeychainUtils {
         }    
     }
     
-    public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate) throws IOException{
+    public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate, byte[] salt, byte[] iv) throws IOException{
         /*Decifra con AES 128 bit il file il cui percorso è passato come parametro, sovrascrivendolo.
         utilizza una password per generare la chiave di decifratura. Ritorna i byte del file decrittato.
         */
         ObjectInputStream ois=null;
         PrivateKey plain = null;
-        byte salt[] = new byte[11];
-        byte iv[]= new byte[11];
+        String s=null;
+        try {
+            ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileChiaviPrivate)));
+            ois.read(salt);
+            ois.read(iv);
+            Cipher cipher = cipherFromPass(salt, iv, password);
+            SealedObject so= (SealedObject) ois.readObject();
+            s= (String)so.getObject(cipher);
+            ois.close();
+	} catch (ClassNotFoundException| IllegalBlockSizeException | 
+               BadPaddingException e ) {
+            e.printStackTrace();
+            System.exit(1);
+      	}finally{
+            if(ois!=null){
+                ois.close();
+            }
+        }
+            return new JSONObject(s);
+    }
+    
+        public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate) throws IOException{
+        /*Decifra con AES 128 bit il file il cui percorso è passato come parametro, sovrascrivendolo.
+        utilizza una password per generare la chiave di decifratura. Ritorna i byte del file decrittato.
+        */ 
+        byte[] iv = new byte[IV_SIZE];
+        byte[] salt= new byte[SALT_SIZE];
+        ObjectInputStream ois=null;
+        PrivateKey plain = null;
         String s=null;
         try {
             ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileChiaviPrivate)));
@@ -124,9 +154,9 @@ public class KeychainUtils {
     public static JSONObject createEmptyKeychain(char[] password,String fileChiaviPrivate) throws IOException{   
         JSONObject jKeychain= new JSONObject("{}");
         SecureRandom random = new SecureRandom();
-        byte salt[] = new byte[11];
+        byte salt[] = new byte[SALT_SIZE];
 	random.nextBytes(salt);
-        byte iv[]= new byte[11];
+        byte iv[]= new byte[IV_SIZE];
         random.nextBytes(iv);
         writeKeychain(jKeychain, salt, iv, password, fileChiaviPrivate);
         return jKeychain;
@@ -169,21 +199,40 @@ public class KeychainUtils {
 
     }
 
-    private static void addPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password){
-        
+    /* L'identificativo è posto per convenzione Key/TYPEdim/Service*/
+    private static void addPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password) throws IOException{
+        byte[] salt= new byte[SALT_SIZE];
+        byte[] iv= new byte[IV_SIZE];
+        JSONObject keychain = decryptKeychain(password, fileChiaviPrivate,salt,iv);
+        for(Map.Entry<String,String> entry :passToAdd.entrySet()){
+            keychain.put(entry.getKey(), entry.getValue());
+        }
+        writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);
     }
     
-    private static void addKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password){
-        
+    /* L'identificativo è posto per convenzione Pass/Service/AccountOnTheService*/
+    private static void addKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password) throws IOException{
+        byte[] salt= new byte[SALT_SIZE];
+        byte[] iv= new byte[IV_SIZE];
+        JSONObject keychain = decryptKeychain(password, fileChiaviPrivate,salt,iv);
+        for(Map.Entry<String,PrivateKey> entry :keyToAdd.entrySet()){
+            keychain.put(entry.getKey(), Base64.getEncoder().encodeToString(entry.getValue().getEncoded()));
+        }
+        writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);
     }
     
-    private static void rmvPassInKeychain(String fileChiaviPrivate, Map<String,String> passToAdd, char[] password){
-        
+    /* L'identificativo è posto per convenzione Pass/Service/AccountOnTheService*/
+    private static void rmvInKeychain(String fileChiaviPrivate, List<String> ids, char[] password) throws IOException{
+        byte[] salt = new byte[SALT_SIZE];
+        byte[] iv= new byte[IV_SIZE];
+        JSONObject keychain = decryptKeychain(password, fileChiaviPrivate,salt,iv);
+        for(String s: ids){
+            keychain.remove(s);
+        }
+        writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);     
     }
     
-    private static void rmvKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password){
-        
-    }
+    
 
 }
 
