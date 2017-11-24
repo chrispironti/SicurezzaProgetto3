@@ -103,7 +103,7 @@ public class KeychainUtils {
             return new JSONObject(s);
     }
     
-        public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate) throws IOException{
+    public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate) throws IOException{
         /*Decifra con AES 128 bit il file il cui percorso è passato come parametro, sovrascrivendolo.
         utilizza una password per generare la chiave di decifratura. Ritorna i byte del file decrittato.
         */ 

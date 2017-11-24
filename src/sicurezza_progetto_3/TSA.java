@@ -40,7 +40,7 @@ public class TSA {
     private ArrayList<byte[]> rootHash;
     private ArrayList<byte[]> superRootHash;
     public final int DUMMYSIZE = 10;
-    private User TSAUser;
+    private 
 
     
     public TSA(char[] password, String keychainTSA, String keychainFilePub) throws NoSuchAlgorithmException, IOException{

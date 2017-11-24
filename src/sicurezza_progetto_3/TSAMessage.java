@@ -8,6 +8,7 @@ package sicurezza_progetto_3;
 import java.io.*;
 import org.json.JSONObject;
 import java.security.*;
+import java.util.Base64;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.crypto.*;
@@ -15,51 +16,43 @@ import javax.crypto.*;
 /**
 
  */
-public class TSARequest {
-    public byte[] info;
-    public byte[] sign;
-    public String signType;
-    
+public class TSAMessage {
+    private byte[] info;
+    private byte[] sign;
+   
     /*Riceve l'oggetto user e l'oggetto JSON contente id utente e hash message. 
     Lo converte in byte, lo firma 
     usando la propria chiave DSA privata, lo cifra con la chiave RSA pubblica 
-    del server TSA, e lo converte in stringa mettendolo nel campo info    
+    del server TSA, e lo converte in stringa mettendolo nel campo info .
+    Attenzione ovviamente il message digest nel jsonobject è salvato con base64
     */
-    public TSARequest(User user, byte[] msgDigest, String signType) throws IOException, BadPaddingException{ //signType lo devo passare da qui?
-        this.signType = signType;
-        
+    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey) throws IOException, BadPaddingException{
         //Costruisco il Json e ottengo i byte
-        byte[] jReqBytes = createJson(user, msgDigest);
+        byte[] jBytes = byteFromJson(j);
         
         //Firma dei byte del Json con la chiave privata dell'user
-        PrivateKey DSAPrKey = user.getDsaPrivKey();
-        signText(jReqBytes, DSAPrKey);
+        signText(jBytes, dsaPrivKey);
         
         //Cifratura con la chiave pubblica della TSA
-        //PublicKey RSAPubKey = TSAServer.getPublicKey?
-        //this.encryptText(jReqBytes, RSAPubKey);
+        this.encryptText(jBytes, rsaPublicKey);
     }
     
-    private byte[] createJson(User user, byte[] msgDigest){
-        JSONObject jRequest = new JSONObject();
-        jRequest.put("userID", user.getID());
-        jRequest.put("msgDigest", msgDigest);
-        
+    private byte[] byteFromJson(JSONObject j){  
         //Ottengo i byte dal Json
-        byte[] jReqBytes = null;
+        byte[] jBytes = null;
         try {
-            jReqBytes = jRequest.toString().getBytes("UTF8");
+            jBytes = j.toString().getBytes("UTF8");
         } catch (UnsupportedEncodingException ex) {
             System.out.println("Encoding non supportato");
         }
         
-        return jReqBytes;
+        return jBytes;
     }
     
     private void signText(byte[] plaintext, PrivateKey DSAPrKey){
         Signature dsa = null;
         try {    
-            dsa = Signature.getInstance(signType);
+            dsa = Signature.getInstance("Dsa2048");
             dsa.initSign(DSAPrKey);
             dsa.update(plaintext);
             sign = dsa.sign();

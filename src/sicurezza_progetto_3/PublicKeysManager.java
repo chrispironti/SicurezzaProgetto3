@@ -6,6 +6,7 @@
 package sicurezza_progetto_3;
 
 import java.io.IOException;
+import java.security.PublicKey;
 import org.json.JSONObject;
 
 /**
@@ -21,11 +22,14 @@ public class PublicKeysManager {
         this.jPubDatabase=KeychainUtils.getPubKeychain(fileChiaviPubbliche);
     }
     
-    public static synchronized PublicKeysManager getPublicKeysManager() throws IOException{
+    public static PublicKeysManager getPublicKeysManager() throws IOException{
         if(pkm == null){
            pkm = new PublicKeysManager("Nomedelfile"); 
         }
         return pkm;
     }
     
+    public PublicKey getPublicKey(String user, String keyId){
+        
+    }
 }

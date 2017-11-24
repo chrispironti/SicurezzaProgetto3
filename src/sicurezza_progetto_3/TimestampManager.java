@@ -35,8 +35,8 @@ public class TimestampManager {
     private int requestsNumber; //Numero di richieste nel Time Frame i
     private int IDNumber; //Inizializzato a 0, lo incrementiamo per ogni utente che fa le richieste
     private TSA TSAServer; //TSA Server
-    private HashMap<String,ArrayList<TSARequest>> requests; //map in cui la chiave è l'id dell'utente, il valore è una lista di richieste fatte da quell'utente
-    private HashMap<String,ArrayList<TSAResponse>> responses;
+    private HashMap<String,ArrayList<TSAMessage>> requests; //map in cui la chiave è l'id dell'utente, il valore è una lista di richieste fatte da quell'utente
+    private HashMap<String,ArrayList<TSAMessage>> responses;
     
     public TimestampManager(String hashAlgorithm, TSA TSAServer){
         this.hashAlgorithm = hashAlgorithm;
@@ -76,7 +76,7 @@ public class TimestampManager {
         byte[] msgDigest = md.digest();
         
         //Crea la richiesta
-        TSARequest req = new TSARequest(user, msgDigest, signType);
+        TSAMessage req = new TSAMessage(user, msgDigest, signType);
         
         //Controllo nella map delle richieste
         //Se l'user ha già delle richieste aggiunge la richiesta nell'ArrayList
