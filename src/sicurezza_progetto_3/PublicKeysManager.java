@@ -30,7 +30,7 @@ public class PublicKeysManager {
     
     public static PublicKeysManager getPublicKeysManager() throws IOException{
         if(pkm == null){
-           pkm = new PublicKeysManager("Nomedelfile"); 
+           pkm = new PublicKeysManager("Pubdatabase"); 
         }
         return pkm;
     }

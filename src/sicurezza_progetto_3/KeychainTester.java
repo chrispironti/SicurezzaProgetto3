@@ -12,6 +12,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
@@ -67,7 +68,11 @@ public class KeychainTester {
         System.out.println(k.getPassword("Pass/Facebook/Detua"));
         System.out.println(k.getPassword("Pass/Gmail/Gavitmc"));
         //System.out.println(k.getPassword("Pass/Facebook/Tedua"));
-
+        
+        PublicKeysManager mypkm= PublicKeysManager.getPublicKeysManager();
+        PublicKey lolo= mypkm.getPublicKey("Michele", "Key/RSA/1024/Main");
+        System.out.println(Base64.getEncoder().encodeToString(lolo.getEncoded()));
+        
         
    /*
         Map<String, String> passtoadd= new HashMap<>();
