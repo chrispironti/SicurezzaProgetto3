@@ -39,24 +39,24 @@ public class KeychainUtils {
                 keyPairGenerator = KeyPairGenerator.getInstance("RSA");
                 keyPairGenerator.initialize(1024,random);
                 KeyPair RSAKeys1024 = keyPairGenerator.generateKeyPair();
-                jpub.put("ChiaveRSA1024Pub", Base64.getEncoder().encodeToString(RSAKeys1024.getPublic().getEncoded()));
-                jpriv.put("ChiaveRSA1024Priv", Base64.getEncoder().encodeToString(RSAKeys1024.getPrivate().getEncoded()));
+                jpub.put("Key/RSA/1024/Main", Base64.getEncoder().encodeToString(RSAKeys1024.getPublic().getEncoded()));
+                jpriv.put("Key/RSA/1024/Main", Base64.getEncoder().encodeToString(RSAKeys1024.getPrivate().getEncoded()));
                 //Generazione chiavi RSA 2048
                 keyPairGenerator.initialize(2048,random);
                 KeyPair RSAKeys2048 = keyPairGenerator.generateKeyPair();
-                jpub.put("ChiaveRSA2048Pub", Base64.getEncoder().encodeToString(RSAKeys2048.getPublic().getEncoded()));
-                jpriv.put("ChiaveRSA2048Priv", Base64.getEncoder().encodeToString(RSAKeys2048.getPrivate().getEncoded()));
+                jpub.put("Key/RSA/2048/Main", Base64.getEncoder().encodeToString(RSAKeys2048.getPublic().getEncoded()));
+                jpriv.put("Key/RSA/2048/Main", Base64.getEncoder().encodeToString(RSAKeys2048.getPrivate().getEncoded()));
                 //Generazione chiavi DSA 1024
                 keyPairGenerator = KeyPairGenerator.getInstance("DSA");
                 keyPairGenerator.initialize(1024,random);
                 KeyPair DSAKeys1024 = keyPairGenerator.generateKeyPair();
-                jpub.put("ChiaveDSA1024Pub", Base64.getEncoder().encodeToString(DSAKeys1024.getPublic().getEncoded()));
-                jpriv.put("ChiaveDSA1024Priv", Base64.getEncoder().encodeToString(DSAKeys1024.getPrivate().getEncoded()));
+                jpub.put("Key/DSA/1024/Main", Base64.getEncoder().encodeToString(DSAKeys1024.getPublic().getEncoded()));
+                jpriv.put("Key/DSA/1024/Main", Base64.getEncoder().encodeToString(DSAKeys1024.getPrivate().getEncoded()));
                 //Generazione chiavi DSA 2048
                 keyPairGenerator.initialize(2048,random);
                 KeyPair DSAKeys2048 = keyPairGenerator.generateKeyPair();
-                jpub.put("ChiaveDSA2048Pub", Base64.getEncoder().encodeToString(DSAKeys2048.getPublic().getEncoded()));
-                jpriv.put("ChiaveDSA2048Priv", Base64.getEncoder().encodeToString(DSAKeys2048.getPrivate().getEncoded()));
+                jpub.put("Key/DSA/2048/Main", Base64.getEncoder().encodeToString(DSAKeys2048.getPublic().getEncoded()));
+                jpriv.put("Key/DSA/2048/Main", Base64.getEncoder().encodeToString(DSAKeys2048.getPrivate().getEncoded()));
                 writeKeychain(jpriv, salt, iv, password, fileChiaviPubbliche);
                 jPubDatabase.put(e.getKey(), jpub.toString());
             }catch(NoSuchAlgorithmException ex){
@@ -210,7 +210,7 @@ public class KeychainUtils {
         writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);
     }
     
-        /* L'identificativo è posto per convenzione Key/TYPEdim/Service*/
+        /* L'identificativo è posto per convenzione Key/TYPE/dim/Service*/
 
     public static void addKeysInKeychain(String fileChiaviPrivate, Map<String,PrivateKey> keyToAdd, char[] password) throws IOException{
         byte[] salt= new byte[SALT_SIZE];
@@ -222,7 +222,6 @@ public class KeychainUtils {
         writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);
     }
     
-    /* L'identificativo è posto per convenzione Pass/Service/AccountOnTheService*/
     public static void rmvInKeychain(String fileChiaviPrivate, List<String> ids, char[] password) throws IOException{
         byte[] salt = new byte[SALT_SIZE];
         byte[] iv= new byte[IV_SIZE];

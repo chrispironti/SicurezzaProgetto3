@@ -6,7 +6,13 @@
 package sicurezza_progetto_3;
 
 import java.io.IOException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import org.json.JSONObject;
 
 /**
@@ -30,6 +36,19 @@ public class PublicKeysManager {
     }
     
     public PublicKey getPublicKey(String user, String keyId){
+        JSONObject j = new JSONObject(jPubDatabase.getString(user));
+        byte[] decodedPubKey=Base64.getDecoder().decode(j.getString(keyId));
+        String[] parameters=keyId.split("/");
+        PublicKey publicKey = null;
+        try{
+            KeyFactory kf = KeyFactory.getInstance(parameters[1]);
+            publicKey = kf.generatePublic(new X509EncodedKeySpec(decodedPubKey));
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+            e.printStackTrace();
+            System.exit(1);
+        }
+        return publicKey;
         
     }
+
 }
