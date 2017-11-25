@@ -87,7 +87,7 @@ public class KeychainUtils {
             ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileChiaviPrivate)));
             ois.read(salt);
             ois.read(iv);
-            Cipher cipher = cipherFromPass(salt, iv, password);
+            Cipher cipher = cipherDecFromPass(salt, iv, password);
             SealedObject so= (SealedObject) ois.readObject();
             s= (String)so.getObject(cipher);
             ois.close();
@@ -115,7 +115,7 @@ public class KeychainUtils {
             ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileChiaviPrivate)));
             ois.read(salt);
             ois.read(iv);
-            Cipher cipher = cipherFromPass(salt, iv, password);
+            Cipher cipher = cipherDecFromPass(salt, iv, password);
             SealedObject so= (SealedObject) ois.readObject();
             s= (String)so.getObject(cipher);
             ois.close();
@@ -161,7 +161,7 @@ public class KeychainUtils {
         return jKeychain;
     }   
     
-    public static Cipher cipherFromPass(byte[] salt, byte[] iv, char[] password){
+    public static Cipher cipherEncFromPass(byte[] salt, byte[] iv, char[] password){
         Cipher cipher=null;
         try{
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
@@ -177,10 +177,26 @@ public class KeychainUtils {
         return cipher;
     }
     
+        public static Cipher cipherDecFromPass(byte[] salt, byte[] iv, char[] password){
+        Cipher cipher=null;
+        try{
+            SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
+            KeySpec keySpec = new PBEKeySpec(password, salt, 65536, 128);
+            SecretKey tmp = factory.generateSecret(keySpec);
+            SecretKey secretKey = new SecretKeySpec(tmp.getEncoded(), "AES");
+            cipher = Cipher.getInstance("AES/CFB/PKCS5Padding");
+            cipher.init(Cipher.DECRYPT_MODE, secretKey, new IvParameterSpec(iv));
+        }catch(NoSuchAlgorithmException | InvalidAlgorithmParameterException| InvalidKeyException | NoSuchPaddingException | InvalidKeySpecException e){
+                e.printStackTrace();
+                System.exit(1);
+        }
+        return cipher;
+    }
+    
     private static void writeKeychain(JSONObject keychain, byte[] salt, byte[] iv, char[] password, String fileChiaviPrivate) throws IOException{
         ObjectOutputStream oos = null;
         try{
-        Cipher cipher= cipherFromPass(salt, iv, password);
+        Cipher cipher= cipherEncFromPass(salt, iv, password);
         oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream(fileChiaviPrivate)));
         SealedObject so = new SealedObject(keychain.toString(),cipher);
         oos.write(salt);
