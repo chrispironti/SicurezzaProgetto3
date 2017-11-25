@@ -20,11 +20,12 @@ public class TSAMessage {
     private byte[] info;
     private byte[] sign;
    
-    /*Riceve l'oggetto user e l'oggetto JSON contente id utente e hash message. 
+    /*
+    TSARequest
+    Riceve l'oggetto user e l'oggetto JSON contente id utente e hash message. 
     Lo converte in byte, lo firma 
     usando la propria chiave DSA privata, lo cifra con la chiave RSA pubblica 
     del server TSA, e lo converte in stringa mettendolo nel campo info .
-    Attenzione ovviamente il message digest nel jsonobject è salvato con base64
     */
     public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey) throws IOException, BadPaddingException{
         //Costruisco il Json e ottengo i byte
