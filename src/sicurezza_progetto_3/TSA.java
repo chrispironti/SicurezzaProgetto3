@@ -112,7 +112,6 @@ public class TSA {
     private ArrayList<JSONObject> createResponses(ArrayList<TSAMessage> requests) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IOException, BadPaddingException{
         
         PrivateKey rsaprivKey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
-        PublicKey dsapubKey = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/DSA/2048/Main");
         ArrayList<JSONObject> partialResponses = new ArrayList<>();
         Cipher c = Cipher.getInstance("RSA/ECB/OAEPPadding");
         c.init(Cipher.DECRYPT_MODE, rsaprivKey);
@@ -123,9 +122,10 @@ public class TSA {
         for(TSAMessage m: requests){          
                 try{
                     this.serialNumber += 1;
-                    byte[] decrypted = c.doFinal(m.getInfo()); 
-                    verifyText(decrypted, m.getSign(), dsapubKey);
+                    byte[] decrypted = c.doFinal(m.getInfo());
                     JSONObject userInfo = new JSONObject(new String(decrypted,"UTF8"));
+                    PublicKey dsapubKey = PublicKeysManager.getPublicKeysManager().getPublicKey(userInfo.getString("UserID"), "Key/DSA/2048/Main");
+                    verifyText(decrypted, m.getSign(), dsapubKey);
                     JSONObject responseInfo = makeResponseInfo(userInfo);
                     this.mt.insert(Base64.getDecoder().decode(userInfo.getString("MessageDigest")),responseInfo.getString("TimeStamp"));
                     partialResponses.add(responseInfo);
@@ -133,6 +133,7 @@ public class TSA {
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
                     System.out.println("Errore. Impossibile processare richiesta numero: " + requestNumber + 
                             "del timeframe attuale. La richiesta verrà ignorata.");
+                    partialResponses.add(null);
             }
         }
         /*Se ci sono meno di 8 richieste (ne sono arrivate meno di 8 o alcune sono
@@ -154,10 +155,14 @@ public class TSA {
         Iterator<String> i = merkleInfo.iterator();
         ArrayList<TSAMessage> responses = new ArrayList<>();
             for(JSONObject j: partialResponses){
-                j.put("Verification Info", i.next());
-                PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("UserID"),"Key/RSA/2048/Main");
-                PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
-                responses.add(new TSAMessage(j, dsaprivkey , rsapubkey));
+                if (j != null){
+                    j.put("Verification Info", i.next());
+                    PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("UserID"),"Key/RSA/2048/Main");
+                    PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
+                    responses.add(new TSAMessage(j, dsaprivkey , rsapubkey));
+                }else{
+                    responses.add(null);
+                }
             }           
         return responses;
     }
