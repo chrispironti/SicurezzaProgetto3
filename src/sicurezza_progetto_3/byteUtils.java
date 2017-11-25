@@ -5,6 +5,12 @@
  */
 package sicurezza_progetto_3;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PublicKey;
+import java.security.Signature;
+import java.security.SignatureException;
+
 /**
  *
  * @author Daniele
@@ -19,4 +25,12 @@ public class byteUtils {
        return array1and2;
    }
     
+    public static void verifyText(byte[] plaintext, byte[] firmaDSA, PublicKey DSAKeyPub) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, NotVerifiedSignException{
+
+    Signature dsa = Signature.getInstance("SHA256withDSA");
+    dsa.initVerify(DSAKeyPub);
+    dsa.update(plaintext);
+    if(!dsa.verify(firmaDSA))
+        throw new NotVerifiedSignException();
+    }
 }

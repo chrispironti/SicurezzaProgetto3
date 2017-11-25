@@ -27,15 +27,20 @@ public class TSAMessage {
     usando la propria chiave DSA privata, lo cifra con la chiave RSA pubblica 
     del server TSA, e lo converte in stringa mettendolo nel campo info .
     */
-    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey) throws IOException, BadPaddingException{
+    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey, String direction) throws IOException, BadPaddingException{
         //Costruisco il Json e ottengo i byte
         byte[] jBytes = byteFromJson(j);
-        
-        //Firma dei byte del Json con la chiave privata dell'user
-        signText(jBytes, dsaPrivKey);
-        
-        //Cifratura con la chiave pubblica della TSA
-        this.encryptText(jBytes, rsaPublicKey);
+        //Se trasmetto verso il server TSA firmo il plaintext
+        if(direction.compareTo("UserToTSA") == 0){
+            signText(jBytes, dsaPrivKey);
+            encryptText(jBytes, rsaPublicKey);
+            
+        }
+        //Se trasmetto verso l'utente cifro il ciphertext. 
+        if(direction.compareTo("TSAToUser") == 0){
+            encryptText(jBytes, rsaPublicKey);
+            signText(this.info, dsaPrivKey);
+        }
     }
     
     private byte[] byteFromJson(JSONObject j){  

@@ -85,15 +85,6 @@ public class TSA {
         
     }
     
-    private void verifyText(byte[] plaintext, byte[] firmaDSA, PublicKey DSAKeyPub) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, NotVerifiedSignException{
-
-        Signature dsa = Signature.getInstance("SHA256withDSA");
-        dsa.initVerify(DSAKeyPub);
-        dsa.update(plaintext);
-        if(!dsa.verify(firmaDSA))
-            throw new NotVerifiedSignException();
-}
-
     private JSONObject makeResponseInfo(JSONObject userInfo){  
         
         JSONObject responseInfo = new JSONObject();
@@ -125,7 +116,7 @@ public class TSA {
                     byte[] decrypted = c.doFinal(m.getInfo());
                     JSONObject userInfo = new JSONObject(new String(decrypted,"UTF8"));
                     PublicKey dsapubKey = PublicKeysManager.getPublicKeysManager().getPublicKey(userInfo.getString("UserID"), "Key/DSA/2048/Main");
-                    verifyText(decrypted, m.getSign(), dsapubKey);
+                    byteUtils.verifyText(decrypted, m.getSign(), dsapubKey);
                     JSONObject responseInfo = makeResponseInfo(userInfo);
                     this.mt.insert(Base64.getDecoder().decode(userInfo.getString("MessageDigest")),responseInfo.getString("TimeStamp"));
                     partialResponses.add(responseInfo);
@@ -159,7 +150,7 @@ public class TSA {
                     j.put("Verification Info", i.next());
                     PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("UserID"),"Key/RSA/2048/Main");
                     PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
-                    responses.add(new TSAMessage(j, dsaprivkey , rsapubkey));
+                    responses.add(new TSAMessage(j, dsaprivkey , rsapubkey, "TSAToUser"));
                 }else{
                     responses.add(null);
                 }

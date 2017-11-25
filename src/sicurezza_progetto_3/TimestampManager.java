@@ -8,6 +8,8 @@ import java.io.*;
 import java.security.*;
 import javax.crypto.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.JSONObject;
 
 
@@ -37,14 +39,15 @@ public class TimestampManager {
     private TSA TSAServer; //TSA Server
     private ArrayList<TSAMessage> requests;
     private ArrayList<TSAMessage> responses;
-    private ArrayList<String> nomiFiles;
+    private ArrayList<String> nomiFile;
     
     public TimestampManager(TSA TSAServer){
         this.TSAServer = TSAServer;
         this.requestsNumber = 0;
         this.IDNumber = 0;
-        this.requests = null;
-        this.responses = null;
+        this.requests = new ArrayList<>();
+        this.responses = new ArrayList<>();
+        this.nomiFile = new ArrayList<>();
     }
     
 
@@ -57,7 +60,7 @@ public class TimestampManager {
     vengono salvate in un array. Se il numero di richieste ha raggiunto il numero
     massimo consentito (8) chiama sendRequests.
     */
-    public void generateRequest(String keychainFile, String userID, char[] password, String documentFile) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException{
+    public void generateRequest(String keychainFile, String userID, char[] password, String documentFile) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException, IllegalBlockSizeException{
         requestsNumber += 1;
         
         //Ottengo la chiave privata Dsa dell'user dal keyring
@@ -74,24 +77,19 @@ public class TimestampManager {
         }
         BufferedInputStream is = new BufferedInputStream(new FileInputStream(documentFile));
         DigestInputStream dis = new DigestInputStream(is, md);
-        while (dis.read() != -1)
-            ;
+        while (dis.read() != -1);
         byte[] msgDigest = md.digest();
         
         //Creo il Json con User Id e msgDigest
         JSONObject j = new JSONObject();
-        j.put("userID", userID);
-        j.put("msgDigest", Base64.getEncoder().encodeToString(msgDigest));
+        j.put("UserID", userID);
+        j.put("MessageDigest", Base64.getEncoder().encodeToString(msgDigest));
         
         //Crea la richiesta
-        TSAMessage req = new TSAMessage(j, dsaPrivKeyUser, rsaPubKeyTsa);
+        TSAMessage req = new TSAMessage(j, dsaPrivKeyUser, rsaPubKeyTsa, "UserToTSA");
         
         //Aggiunge la richiesta all'ArrayList
-        if(requests==null){
-            requests = new ArrayList<>();   
-        }
         requests.add(req);
-
         if (requestsNumber == 8){
             this.processRequests();
         }
@@ -101,9 +99,8 @@ public class TimestampManager {
     corrispondente della classe. Può essere chiamato in un qualunque momento dall'utente
     o automaticamente da generateRequest quando il numero max di richieste è stato raggiunto.
     */
-    public void processRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException{ 
+    public void processRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException, IllegalBlockSizeException{ 
         responses=TSAServer.generateTimestamp(requests);      
-        //chiama un metodo che verifica, decifra e salva rispos
         processResponses();
         this.requestsNumber = 0;
         this.requests = new ArrayList<>();
@@ -113,27 +110,26 @@ public class TimestampManager {
     Lancia un'eccezione per l utente i-esimo se 
     la sua marca non è verificata*/ 
     /*Attenzione usa lista nomi file per salvarli*/
-    public void processResponses() throws UnsupportedEncodingException, IOException, InvalidKeyException, SignatureException, NotVerifiedSignException, NoSuchAlgorithmException, NoSuchPaddingException, IllegalBlockSizeException, BadPaddingException{
-        PublicKey dsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/DSA/2048/Main");
-        for (TSAMessage r: this.responses){
-            //Verifica della firma
-            Signature dsa = null;
-            try {
-                dsa = Signature.getInstance("SHA256withDSA");
-            } catch (NoSuchAlgorithmException ex) {
-                System.out.println("Algoritmo non supportato");
+    public void processResponses() throws FileNotFoundException, IOException{
+        
+        PublicKey dsapublickey = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/DSA/2048/Main");
+        Iterator<String> i = this.nomiFile.iterator();
+        BufferedWriter bw = null;
+        for(TSAMessage m: this.responses){
+            String file = i.next();
+            if (m != null){
+                try {
+                    byteUtils.verifyText(m.getInfo(), m.getSign(), dsapublickey);
+                    bw = new BufferedWriter(new FileWriter(file+".marca.enc"));
+                    bw.write(Base64.getEncoder().encodeToString(m.getInfo()));
+                } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NotVerifiedSignException ex) {
+                    System.out.println("Errore di firma per la marca associata al file: " +
+                            file + ". La marca non verrà salvata.");
+                }finally{
+                    if (bw != null)
+                        bw.close();
+                }
             }
-            dsa.initVerify(dsaPubKeyTsa);
-            dsa.update(r.getInfo());  //r.info.getBytes?
-            if(!dsa.verify(r.getSign()))
-                throw new NotVerifiedSignException();
-            //Decifratura RSA private key
-            //Dovrei sapere chi è l'user
-            Keychain userKeyChain = new Keychain(keychainFile, password);
-            PrivateKey rsaPrivKeyUser = userKeyChain.getPrivateKey("Key/RSA/2048/Main");
-            Cipher c = Cipher.getInstance("RSA/ECB/OAEPPadding");
-            c.init(Cipher.DECRYPT_MODE, rsaPrivKeyUser);
-            byte[] decrypted = c.doFinal(r.getInfo());
         }
     }
         
