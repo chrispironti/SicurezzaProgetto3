@@ -120,7 +120,7 @@ public class TimestampManager {
             if (m != null){
                 try {
                     byteUtils.verifyText(m.getInfo(), m.getSign(), dsapublickey);
-                    bw = new BufferedWriter(new FileWriter(file+".marca.enc"));
+                    bw = new BufferedWriter(new PrintWriter(file+".marca.enc"));
                     bw.write(Base64.getEncoder().encodeToString(m.getInfo()));
                 } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NotVerifiedSignException ex) {
                     System.out.println("Errore di firma per la marca associata al file: " +
@@ -131,6 +131,25 @@ public class TimestampManager {
                 }
             }
         }
+    }
+    
+    public void decryptTimestamp(String userKeychain, String encryptedTimestamp, char[] password) throws IOException{
+        
+        Keychain k = new Keychain(userKeychain, password);
+        byte[] plaintext = null;
+        PrivateKey rsaprivKey = k.getPrivateKey("Key/RSA/2048/Main");
+        try{
+            Cipher c = Cipher.getInstance("RSA/ECB/OAEPPadding");
+            c.init(Cipher.DECRYPT_MODE, rsaprivKey);
+            CipherInputStream cis = new CipherInputStream(new FileInputStream(encryptedTimestamp), c);
+        } catch (InvalidKeyException ex) {
+            Logger.getLogger(TimestampManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchAlgorithmException ex) {
+            Logger.getLogger(TimestampManager.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (NoSuchPaddingException ex) {
+            Logger.getLogger(TimestampManager.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
     }
         
     public boolean verifyOffline(String docFile, String marcaFile){    
