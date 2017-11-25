@@ -4,7 +4,10 @@
  * and open the template in the editor.
  */
 package sicurezza_progetto_3;
+import java.io.BufferedOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.sql.Timestamp;
@@ -30,26 +33,24 @@ import org.json.*;
  * 5)La firma stessa e il tipo di algoritmo di firma
  */
 public class TSA {
-
-    private final String hashAlgorithm = "SHA-256"; //Algoritmo di hash TSA, fissato a SHA-256.
     private int serialNumber;
     private int timeframe;
     //MerkelTree per il timeframe i-esimo
     private MerkleTree mt; 
     //Pubblichiamo i valori di HV e SHV a ogni timeframe
-    private ArrayList<byte[]> rootHash;
-    private ArrayList<byte[]> superRootHash;
+    private JSONArray hashValues;
+    private Keychain TSAKeyChain;
+    private MessageDigest md;
     public final int DUMMYSIZE = 10;
-    private 
 
     
-    public TSA(char[] password, String keychainTSA, String keychainFilePub) throws NoSuchAlgorithmException, IOException{
+    public TSA() throws NoSuchAlgorithmException, IOException{
         this.serialNumber = 0;
         this.timeframe = 0;
-        this.rootHash = new ArrayList<>();
-        this.superRootHash = new ArrayList<>();
-        computeSuperHashValue();
-        this.TSAUser = new User("TSA", password, keychainTSA, keychainFilePub);
+        this.hashValues = new JSONArray();
+        this.TSAKeyChain = new Keychain("TSAKeyChain","TSAPassword".toCharArray());
+        this.md = MessageDigest.getInstance("SHA256");
+        computeHashValues();
     }
     
     
@@ -73,75 +74,65 @@ public class TSA {
     
     public ArrayList<TSAMessage> generateTimestamp(ArrayList<TSAMessage> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
         
-        this.mt = new MerkleTree(this.hashAlgorithm);
+        this.mt = new MerkleTree();
         this.timeframe += 1;
-        HashMap<String,ArrayList<JSONObject>> partialResponses = createResponses(requests);
-        byte[] hashValue = mt.buildMerkleTree();
-        this.rootHash.add(hashValue);
-        computeSuperHashValue();
+        JSONObject j = new JSONObject();
+        ArrayList<JSONObject> partialResponses = createResponses(requests);
+        computeHashValues();
         ArrayList<String> merkleInfo = mt.buildInfo();
         saveHashValues();
         return finalizeResponses(partialResponses, merkleInfo);
         
     }
     
-    private void verifyText(byte[] plaintext, byte[] firmaDSA, String tipofirma, PublicKey DSAKeyPub) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, NotVerifiedSignException{
+    private void verifyText(byte[] plaintext, byte[] firmaDSA, PublicKey DSAKeyPub) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException, NotVerifiedSignException{
 
-        Signature dsa = Signature.getInstance(tipofirma);
+        Signature dsa = Signature.getInstance("SHA256withDSA");
         dsa.initVerify(DSAKeyPub);
         dsa.update(plaintext);
         if(!dsa.verify(firmaDSA))
             throw new NotVerifiedSignException();
 }
 
-    private JSONObject makeResponseInfo(JSONObject userInfo, MessageDigest md){  
+    private JSONObject makeResponseInfo(JSONObject userInfo){  
         
         JSONObject responseInfo = new JSONObject();
-        responseInfo.put("TimeStamp", new Timestamp(System.currentTimeMillis()));
+        responseInfo.put("TimeStamp", new Timestamp(System.currentTimeMillis()+10000).toString());
         responseInfo.put("UserID", userInfo.getString("UserID"));
         responseInfo.put("SerialNumber", this.serialNumber);
         String messageDigest = userInfo.getString("MessageDigest");
         responseInfo.put("MessageDigest",messageDigest);
         byte[] userMessageDigest = Base64.getDecoder().decode(messageDigest);
-        md.update(userMessageDigest);
-        responseInfo.put("TSADigest",Base64.getEncoder().encodeToString(md.digest()));
+        this.md.update(userMessageDigest);
+        responseInfo.put("TSADigest",Base64.getEncoder().encodeToString(this.md.digest()));
         responseInfo.put("TimeFrame", this.timeframe);
         return responseInfo;
     }
     
-    private HashMap<String,ArrayList<JSONObject>> createResponses(HashMap<String,ArrayList<TSARequest>> requests) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IOException, BadPaddingException{
+    private ArrayList<JSONObject> createResponses(ArrayList<TSAMessage> requests) throws NoSuchAlgorithmException, InvalidKeyException, NoSuchPaddingException, IOException, BadPaddingException{
         
-        PrivateKey rsaprivKey = this.TSAUser.getRsaPrivKey();
-        JSONObject pubKeys = KeychainUtils.getPubKeychain(keyChainFilePub);
-        HashMap<String,ArrayList<JSONObject>> partialResponses = new HashMap<>();
+        PrivateKey rsaprivKey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
+        PublicKey dsapubKey = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/DSA/2048/Main");
+        ArrayList<JSONObject> partialResponses = new ArrayList<>();
         Cipher c = Cipher.getInstance("RSA/ECB/OAEPPadding");
         c.init(Cipher.DECRYPT_MODE, rsaprivKey);
-        MessageDigest md = MessageDigest.getInstance(this.hashAlgorithm);
         int requestNumber = 0;
         /*Esamino le richieste, decifro, verifico la firma e creo i JSONObject di risposta
         da completare con le informazioni derivanti dalla costruzione del Merkel Tree
         */
-        for(Map.Entry<String,ArrayList<TSARequest>> e: requests.entrySet()){
-            ArrayList<JSONObject> objArray = new ArrayList<>();
-            
-            for(TSARequest req: e.getValue()){
+        for(TSAMessage m: requests){          
                 try{
                     this.serialNumber += 1;
-                    byte[] decrypted = c.doFinal(req.info); //Da Aggiustare
-                    verifyText(decrypted, req.sign, req.signType, dsapubkey);
+                    byte[] decrypted = c.doFinal(m.getInfo()); 
+                    verifyText(decrypted, m.getSign(), dsapubKey);
                     JSONObject userInfo = new JSONObject(new String(decrypted,"UTF8"));
-                    JSONObject responseInfo = makeResponseInfo(userInfo, md);
-                    this.mt.insert(Base64.getDecoder().decode(userInfo.getString("MessageDigest")));
-                    objArray.add(responseInfo);
+                    JSONObject responseInfo = makeResponseInfo(userInfo);
+                    this.mt.insert(Base64.getDecoder().decode(userInfo.getString("MessageDigest")),responseInfo.getString("TimeStamp"));
+                    partialResponses.add(responseInfo);
                     requestNumber += 1;
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
                     System.out.println("Errore. Impossibile processare richiesta numero: " + requestNumber + 
-                            "del timeframe attuale, da parte " 
-                                    + "dell'utente: " + e.getKey()+". La richiesta verrà ignorata.");
-                }
-            }
-            if(!objArray.isEmpty()){
-                partialResponses.put(e.getKey(),objArray);
+                            "del timeframe attuale. La richiesta verrà ignorata.");
             }
         }
         /*Se ci sono meno di 8 richieste (ne sono arrivate meno di 8 o alcune sono
@@ -151,53 +142,76 @@ public class TSA {
         while (requestNumber < 8){
             byte[] dummy = new byte[this.DUMMYSIZE];
             r.nextBytes(dummy);
-            md.update(dummy);
-            this.mt.insert(md.digest());
+            this.md.update(dummy);
+            this.mt.insert(this.md.digest(), new Timestamp(System.currentTimeMillis()+10000).toString());
             requestNumber += 1;
         }
         return partialResponses;
     }
     
-    private HashMap<String,ArrayList<TSAResponse>> finalizeResponses(HashMap<String,ArrayList<JSONObject>> partialResponses, ArrayList<String> merkleInfo){
+    private ArrayList<TSAMessage> finalizeResponses(ArrayList<JSONObject> partialResponses, ArrayList<String> merkleInfo) throws IOException, BadPaddingException{
         
         Iterator<String> i = merkleInfo.iterator();
-        HashMap<String,ArrayList<TSAResponse>> responses = new HashMap<>();
-        for(Map.Entry<String,ArrayList<JSONObject>> e: partialResponses.entrySet()){
-            ArrayList<TSAResponse> value = new ArrayList<>();
-            for(JSONObject j: e.getValue()){
+        ArrayList<TSAMessage> responses = new ArrayList<>();
+            for(JSONObject j: partialResponses){
                 j.put("Verification Info", i.next());
-                value.add(new TSAResponse(j,e.getKey()));
-            }
-            responses.put(e.getKey(), value);            
-        }
+                PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("UserID"),"Key/RSA/2048/Main");
+                PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
+                responses.add(new TSAMessage(j, dsaprivkey , rsapubkey));
+            }           
         return responses;
     }
     
-    private void computeSuperHashValue() throws NoSuchAlgorithmException{
+    private void computeHashValues() throws NoSuchAlgorithmException{
         
-        MessageDigest md = MessageDigest.getInstance(this.hashAlgorithm);
         byte[] shv_i = null;
+        JSONObject j = new JSONObject();
         if (this.timeframe == 0){
             Random r = new Random();
             shv_i = new byte[this.DUMMYSIZE];
-            r.nextBytes(shv_i);    
-        }else
-            shv_i = byteUtils.arrayConcat(this.superRootHash.get(this.timeframe - 1), 
-            this.rootHash.get(this.timeframe));
-        md.update(shv_i);
-        this.superRootHash.add(md.digest());
+            r.nextBytes(shv_i);
+        }else{
+            byte[] hv = mt.buildMerkleTree();
+            String superHashValue = this.hashValues.getJSONObject(this.timeframe-1).getString("SuperHashValue");
+            byte[] shv_before = Base64.getDecoder().decode(superHashValue);
+            shv_i = byteUtils.arrayConcat(shv_before, hv);
+            j.put("HashValue", Base64.getEncoder().encodeToString(hv));
+        }            
+        this.md.update(shv_i);
+        j.put("SuperHashValue", Base64.getEncoder().encodeToString(this.md.digest()));
+        this.hashValues.put(this.timeframe, j);
     }
     
     public byte[] getHashValue(int timeframe){
-        return this.rootHash.get(timeframe);
+        
+        if (timeframe == 0){
+            System.out.println("Errore. Nessun Hash Value al timeframe 0.");
+            return null;
+        }
+        else{
+            JSONObject j = this.hashValues.getJSONObject(timeframe);
+            return Base64.getDecoder().decode(j.getString("HashValue"));
+        }
     }
     
     public byte[] getSuperHashValue(int timeframe){
-        return this.superRootHash.get(timeframe);
+        
+        JSONObject j = this.hashValues.getJSONObject(timeframe);
+        return Base64.getDecoder().decode(j.getString("SuperHashValue"));
     }   
     
     
-    private void saveHashValues(){
+    private void saveHashValues() throws IOException{
         
+        ObjectOutputStream oos = null;
+        try{
+        oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("hashTSA")));
+        oos.writeObject(this.hashValues.toString());
+        oos.close(); 
+        }finally{
+        if(oos!=null){
+            oos.close();
+            }  
+        }
     }
 }

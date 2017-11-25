@@ -22,26 +22,26 @@ import java.util.Base64;
 public class MerkleTree {
     
    private byte[][] tree; //Array bidimensionale. Ogni elemento è un array di byte
-   private String hash; //Algoritmo di hash del server TSA
    private int size;
+   private MessageDigest md;
    
-   public MerkleTree(String hash){
+   public MerkleTree() throws NoSuchAlgorithmException{
     this.tree = new byte[15][];
-    this.hash = hash;
     this.size = 0;
+    this.md = MessageDigest.getInstance("SHA256");
 }
    
-   public void insert(byte[] elem){
-       this.tree[this.size] = elem;
+   public void insert(byte[] elem, String timestamp){
+       this.md.update(byteUtils.arrayConcat(elem, Base64.getDecoder().decode(timestamp)));
+       this.tree[this.size] = md.digest();
        this.size += 1;
    }
    
    public byte[] buildMerkleTree() throws NoSuchAlgorithmException{
        int j = 8;
-       MessageDigest md = MessageDigest.getInstance(hash);
        for(int i = 0; i < 14 ; i+=2){
-           md.update(byteUtils.arrayConcat(tree[i],tree[i+1]));
-           insert(md.digest());
+           this.md.update(byteUtils.arrayConcat(tree[i],tree[i+1]));
+           this.tree[j] = this.md.digest();
            j += 1;
        }
        return tree[j]; //Ritorna la radice, cioè HVi
