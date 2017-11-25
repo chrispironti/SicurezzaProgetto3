@@ -161,7 +161,7 @@ public class KeychainUtils {
         return jKeychain;
     }   
     
-    private static Cipher cipherFromPass(byte[] salt, byte[] iv, char[] password){
+    public static Cipher cipherFromPass(byte[] salt, byte[] iv, char[] password){
         Cipher cipher=null;
         try{
             SecretKeyFactory factory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256");
