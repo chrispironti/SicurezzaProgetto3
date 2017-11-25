@@ -19,10 +19,10 @@ import org.json.*;
  */
 public class KeychainUtils {
     
-    public static final int IV_SIZE=11;
-    public static final int SALT_SIZE=11;
+    public static final int IV_SIZE=16;
+    public static final int SALT_SIZE=16;
     
-    public static void generateKeyPairs(char[] password, String fileChiaviPubbliche, Map<String,String> filesChiaviPrivate) throws IOException{
+    public static void generateKeyPairs(Map<String,char[]> passwords, String fileChiaviPubbliche, Map<String,String> filesChiaviPrivate) throws IOException{
         
         JSONObject jPubDatabase = new JSONObject();
         JSONObject jpub = new JSONObject();
@@ -57,7 +57,7 @@ public class KeychainUtils {
                 KeyPair DSAKeys2048 = keyPairGenerator.generateKeyPair();
                 jpub.put("Key/DSA/2048/Main", Base64.getEncoder().encodeToString(DSAKeys2048.getPublic().getEncoded()));
                 jpriv.put("Key/DSA/2048/Main", Base64.getEncoder().encodeToString(DSAKeys2048.getPrivate().getEncoded()));
-                writeKeychain(jpriv, salt, iv, password, fileChiaviPubbliche);
+                writeKeychain(jpriv, salt, iv, passwords.get(e.getKey()), e.getValue());
                 jPubDatabase.put(e.getKey(), jpub.toString());
             }catch(NoSuchAlgorithmException ex){
                 ex.printStackTrace();
@@ -110,7 +110,6 @@ public class KeychainUtils {
         byte[] iv = new byte[IV_SIZE];
         byte[] salt= new byte[SALT_SIZE];
         ObjectInputStream ois=null;
-        PrivateKey plain = null;
         String s=null;
         try {
             ois = new ObjectInputStream(new BufferedInputStream(new FileInputStream(fileChiaviPrivate)));
