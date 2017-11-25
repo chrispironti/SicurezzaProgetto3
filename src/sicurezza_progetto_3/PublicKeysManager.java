@@ -13,6 +13,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -36,8 +37,20 @@ public class PublicKeysManager {
     }
     
     public PublicKey getPublicKey(String user, String keyId){
-        JSONObject j = new JSONObject(jPubDatabase.getString(user));
-        byte[] decodedPubKey=Base64.getDecoder().decode(j.getString(keyId));
+        JSONObject j;
+        try{
+        j = new JSONObject(jPubDatabase.getString(user));
+        }catch(JSONException ex){
+            System.out.println("Errore Utente non presente!");
+            return null;
+        }
+        byte[] decodedPubKey;
+        try{
+            decodedPubKey=Base64.getDecoder().decode(j.getString(keyId));
+        }catch(JSONException ex){
+            System.out.println("Errore chiave non presente!");
+            return null;
+        }
         String[] parameters=keyId.split("/");
         PublicKey publicKey = null;
         try{

@@ -12,6 +12,7 @@ import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
@@ -32,7 +33,13 @@ public class Keychain {
         
         String[] parameters= identifier.split("/");
         PrivateKey k= null;
-        String keytomodify = jKeyChain.getString(identifier);
+        String keytomodify;
+        try{
+            keytomodify=jKeyChain.getString(identifier);
+        }catch(JSONException ex){
+            System.out.println("Errore chiave non presente!");
+            return null;
+        }
         byte[] decodedPrivKey=Base64.getDecoder().decode(keytomodify);
         try{
             k=KeyFactory.getInstance(parameters[1]).generatePrivate(new PKCS8EncodedKeySpec(decodedPrivKey));
@@ -43,7 +50,12 @@ public class Keychain {
     }
     
     public String getPassword(String identifier){
-        return jKeyChain.getString(identifier);
+        try{
+            return jKeyChain.getString(identifier);
+        }catch(JSONException ex){
+            System.out.println("Errore password non presente");
+            return null;
+        }
     }
     
 

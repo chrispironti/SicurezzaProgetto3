@@ -56,7 +56,7 @@ public class KeychainTester {
         */
         
         
-        Keychain k= new Keychain("Caparezza.kc", "prigioniero709".toCharArray());
+        //Keychain k= new Keychain("Caparezza.kc", "prigioniero709".toCharArray());
         /*PrivateKey mypk= k.getPrivateKey("Key/RSA/1024/Main");
         System.out.println(Base64.getEncoder().encodeToString(mypk.getEncoded()));
         System.out.println(k.getPassword("Pass/Facebook/Tedua"));
@@ -65,14 +65,27 @@ public class KeychainTester {
         List<String> passtormv= new LinkedList<>();
         passtormv.add("Pass/Facebook/Tedua");
         KeychainUtils.rmvInKeychain("Caparezza.kc", passtormv, "prigioniero709".toCharArray());*/
-        System.out.println(k.getPassword("Pass/Facebook/Detua"));
-        System.out.println(k.getPassword("Pass/Gmail/Gavitmc"));
+        //System.out.println(k.getPassword("Pass/Facebook/Detua"));
+        //System.out.println(k.getPassword("Pass/Gmail/Gavitmc"));
         //System.out.println(k.getPassword("Pass/Facebook/Tedua"));
         
-        PublicKeysManager mypkm= PublicKeysManager.getPublicKeysManager();
+        /*PublicKeysManager mypkm= PublicKeysManager.getPublicKeysManager();
         PublicKey lolo= mypkm.getPublicKey("Michele", "Key/RSA/1024/Main");
-        System.out.println(Base64.getEncoder().encodeToString(lolo.getEncoded()));
+        System.out.println(Base64.getEncoder().encodeToString(lolo.getEncoded()));*/
         
+        SecureRandom random = new SecureRandom();
+        KeyPairGenerator keyPairGenerator = null;
+        keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+        keyPairGenerator.initialize(1024,random);
+        KeyPair RSAKeys1024 = keyPairGenerator.generateKeyPair();
+        HashMap<String,PrivateKey> kkk= new HashMap<>();
+        kkk.put("Key/RSA/1024/Dirigente", RSAKeys1024.getPrivate());
+        KeychainUtils.addKeysInKeychain("Caparezza.kc",kkk, "prigioniero709".toCharArray());
+        Keychain k2=new Keychain("Caparezza.kc", "prigioniero709".toCharArray());
+        PrivateKey dirigente= k2.getPrivateKey("Key/RSA/1024/Main");
+        System.out.println(Base64.getEncoder().encodeToString(dirigente.getEncoded()));
+        
+                
         
    /*
         Map<String, String> passtoadd= new HashMap<>();
@@ -82,27 +95,7 @@ public class KeychainTester {
         KeychainUtils.addPassInKeychain("Caparezza.kc", passtoadd, "prigioniero709".toCharArray());
         */
         
-        
-        /*
-        SERJSONObject j= new SERJSONObject();
-        SecureRandom random = new SecureRandom();
-        KeyPairGenerator keyPairGenerator = null;
-        keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-        keyPairGenerator.initialize(1024,random);
-        KeyPair RSAKeys1024 = keyPairGenerator.generateKeyPair();
-        j.put("Key/RSA/1024/Main", Base64.getEncoder().encodeToString(RSAKeys1024.getPublic().getEncoded()));
-        j.put("Key/RSA/1024/Main2", Base64.getEncoder().encodeToString(RSAKeys1024.getPrivate().getEncoded()));
-        byte salt[] = new byte[SALT_SIZE];
-	random.nextBytes(salt);
-        byte iv[]= new byte[IV_SIZE];
-        random.nextBytes(iv);
-        System.out.println(j.toString());
-        Cipher c = KeychainUtils.cipherEncFromPass(salt, iv, "gavit".toCharArray());
-        Cipher cipher= KeychainUtils.cipherDecFromPass(salt, iv, "gavit".toCharArray());
-        SealedObject so = new SealedObject(j.toString(), c);
-        String s = (String) so.getObject(cipher);
-        System.out.println(s);
-*/
+
         
         
         
