@@ -31,7 +31,7 @@ public class PublicKeysManager {
     
     public static PublicKeysManager getPublicKeysManager() throws IOException{
         if(pkm == null){
-           pkm = new PublicKeysManager("Pubdatabase"); 
+           pkm = new PublicKeysManager("chiaviPub.txt"); 
         }
         return pkm;
     }

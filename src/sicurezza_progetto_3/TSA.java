@@ -47,7 +47,7 @@ public class TSA {
         this.serialNumber = 0;
         this.timeframe = 0;
         this.hashValues = new JSONArray();
-        this.TSAKeyChain = new Keychain("TSAKeyChain","TSAPassword".toCharArray());
+        this.TSAKeyChain = new Keychain("TSA.kc","TSAPass".toCharArray());
         this.md = MessageDigest.getInstance("SHA-256");
         computeHashValues();
     }
@@ -94,7 +94,8 @@ public class TSA {
         String messageDigest = userInfo.getString("MessageDigest");
         responseInfo.put("MessageDigest",messageDigest);
         byte[] userMessageDigest = Base64.getDecoder().decode(messageDigest);
-        byte[] timestamp = Base64.getDecoder().decode(t);
+        //byte[] timestamp = Base64.getDecoder().decode(t);
+        byte[] timestamp = t.getBytes();
         this.mt.insert(userMessageDigest, timestamp);
         this.md.update(byteUtils.arrayConcat(userMessageDigest, timestamp));
         responseInfo.put("TSADigest",Base64.getEncoder().encodeToString(this.md.digest()));

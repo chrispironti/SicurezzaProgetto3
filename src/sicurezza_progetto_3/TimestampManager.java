@@ -67,7 +67,7 @@ public class TimestampManager {
         Keychain userKeyChain = new Keychain(keychainFile, password);
         PrivateKey dsaPrivKeyUser = userKeyChain.getPrivateKey("Key/DSA/2048/Main");
         //Ottengo la chiave pubblica Rsa della TSA dal file di chiavi pubbliche
-        PublicKey rsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/RSA/2048/Main");      
+        PublicKey rsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/RSA/2048/Main");
         //Creo il Json con User Id e msgDigest
         JSONObject j = new JSONObject();
         j.put("UserID", userID);
