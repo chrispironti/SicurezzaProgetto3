@@ -71,7 +71,7 @@ public class TSA {
     Se il numero di richieste è inferiore a 8 il metodo deve inserire nel Merkel
     Tree i nodi rimanenti con hash fittizi.*/
     
-    public ArrayList<TSAMessage> generateTimestamp(ArrayList<TSAMessage> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException{
+    public ArrayList<TSAMessage> generateTimestamp(ArrayList<TSAMessage> requests) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, ShortBufferException{
         
         this.mt = new MerkleTree();
         this.timeframe += 1;
@@ -124,8 +124,8 @@ public class TSA {
                     partialResponses.add(responseInfo);
                     requestNumber += 1;
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
-                    System.out.println("Errore. Impossibile processare richiesta numero: " + requestNumber + 
-                            "del timeframe attuale. La richiesta verrà ignorata.");
+                    System.out.println("Errore. Impossibile processare richiesta numero " + requestNumber + 
+                            " del timeframe attuale. La richiesta verrà ignorata.");
                     partialResponses.add(null);
             }
         }
@@ -138,13 +138,13 @@ public class TSA {
             r.nextBytes(dummy);
             this.md.update(dummy);
             String t = new Timestamp(System.currentTimeMillis()+10000).toString();
-            this.mt.insert(this.md.digest(), Base64.getDecoder().decode(t));
+            this.mt.insert(this.md.digest(), t.getBytes("UTF8"));
             requestNumber += 1;
         }
         return partialResponses;
     }
     
-    private ArrayList<TSAMessage> finalizeResponses(ArrayList<JSONObject> partialResponses, ArrayList<String> merkleInfo) throws IOException, BadPaddingException{
+    private ArrayList<TSAMessage> finalizeResponses(ArrayList<JSONObject> partialResponses, ArrayList<String> merkleInfo) throws IOException, BadPaddingException, ShortBufferException{
         
         Iterator<String> i = merkleInfo.iterator();
         ArrayList<TSAMessage> responses = new ArrayList<>();
@@ -153,7 +153,7 @@ public class TSA {
                     j.put("VI", i.next());
                     j.put("HV", getHashValue(this.timeframe));
                     PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("ID"),"Key/RSA/2048/Main");
-                    PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
+                    PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/DSA/2048/Main");
                     responses.add(new TSAMessage(j, dsaprivkey , rsapubkey, "TSAToUser"));
                 }else{
                     responses.add(null);

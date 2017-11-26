@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
+import javax.crypto.ShortBufferException;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -22,7 +23,7 @@ import javax.crypto.NoSuchPaddingException;
  * @author Christopher
  */
 public class TestProgetto3 {
-    public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeyException, NoSuchPaddingException, BadPaddingException, UnsupportedEncodingException, SignatureException, IllegalBlockSizeException, NotVerifiedSignException{
+    public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeyException, NoSuchPaddingException, BadPaddingException, UnsupportedEncodingException, SignatureException, IllegalBlockSizeException, NotVerifiedSignException, ShortBufferException{
        /* Map<String, char[]> users = new HashMap<>();
         Map<String,String> filesChiaviPrivate = new HashMap<>();
         users.put("Caparezza", "prigioniero709".toCharArray());
@@ -37,6 +38,7 @@ public class TestProgetto3 {
         
         TSA TSAserver = new TSA();
         TimestampManager tsm = new TimestampManager(TSAserver);
+        //Genera richieste
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento1.txt");
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento2.txt");
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento3.txt");
@@ -45,6 +47,16 @@ public class TestProgetto3 {
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento6.txt");
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento7.txt");
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento8.txt");
+        //Decifra marche
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento1.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento2.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento3.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento4.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento5.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento6.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento7.txt.marca.enc", "sanremo".toCharArray());
+        tsm.decryptTimestamp("Mikimix.kc", "documenti/documento8.txt.marca.enc", "sanremo".toCharArray());
+        //Verifica online
     }
 
     

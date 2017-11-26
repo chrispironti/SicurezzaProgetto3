@@ -27,7 +27,7 @@ public class TSAMessage {
     usando la propria chiave DSA privata, lo cifra con la chiave RSA pubblica 
     del server TSA, e lo converte in stringa mettendolo nel campo info .
     */
-    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey, String direction) throws IOException, BadPaddingException{
+    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey, String direction) throws IOException, BadPaddingException, ShortBufferException{
         //Costruisco il Json e ottengo i byte
         byte[] jBytes = byteFromJson(j);
         //Se trasmetto verso il server TSA firmo il plaintext
@@ -68,11 +68,17 @@ public class TSAMessage {
         }
     }
     
-    private void encryptText(byte[] plainText, PublicKey RSAPubKey){
+    private void encryptText(byte[] plainText, PublicKey RSAPubKey) throws ShortBufferException{
         try {
             Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
             cipher.init(Cipher.ENCRYPT_MODE, RSAPubKey);
-            info = cipher.doFinal(plainText);
+            if(plainText.length < 214){
+                info = cipher.doFinal(plainText);
+            }else{
+            byte[] buffer = new byte[214];
+            cipher.update(plainText, 0, 214, buffer);
+            info = byteUtils.arrayConcat(buffer, cipher.doFinal());
+            }
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
                 e.printStackTrace();
                 System.exit(1);

@@ -60,7 +60,7 @@ public class TimestampManager {
     vengono salvate in un array. Se il numero di richieste ha raggiunto il numero
     massimo consentito (8) chiama sendRequests.
     */
-    public void generateRequest(String keychainFile, String userID, char[] password, String documentFile) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException, IllegalBlockSizeException{
+    public void generateRequest(String keychainFile, String userID, char[] password, String documentFile) throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException, IllegalBlockSizeException, ShortBufferException{
         requestsNumber += 1;
         
         //Ottengo la chiave privata Dsa dell'user dal keyring
@@ -78,6 +78,7 @@ public class TimestampManager {
         
         //Aggiunge la richiesta all'ArrayList
         requests.add(req);
+        this.nomiFile.add(documentFile);
         if (requestsNumber == 8){
             this.processRequests();
         }
@@ -101,7 +102,7 @@ public class TimestampManager {
     corrispondente della classe. Può essere chiamato in un qualunque momento dall'utente
     o automaticamente da generateRequest quando il numero max di richieste è stato raggiunto.
     */
-    public void processRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException, IllegalBlockSizeException{ 
+    public void processRequests() throws InvalidKeyException, NoSuchAlgorithmException, NoSuchPaddingException, IOException, BadPaddingException, UnsupportedEncodingException, SignatureException, NotVerifiedSignException, IllegalBlockSizeException, ShortBufferException{ 
         responses=TSAServer.generateTimestamp(requests);      
         processResponses();
         this.requestsNumber = 0;
@@ -147,7 +148,7 @@ public class TimestampManager {
             c.init(Cipher.DECRYPT_MODE, rsaprivKey);
             cis = new CipherInputStream(new FileInputStream(encryptedTimestamp), c);
             String read = "";
-            byte [] buffer = new byte [1024];  
+            byte [] buffer = new byte [214];  
             int r;  
             while ((r = cis.read(buffer)) > 0) {  
                 read+=new String(buffer);
