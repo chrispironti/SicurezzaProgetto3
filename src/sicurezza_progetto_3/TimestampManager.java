@@ -5,12 +5,12 @@
  */
 package sicurezza_progetto_3;
 import java.io.*;
+import java.nio.file.*;
 import java.security.*;
 import javax.crypto.*;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
 
 /**
@@ -67,23 +67,11 @@ public class TimestampManager {
         Keychain userKeyChain = new Keychain(keychainFile, password);
         PrivateKey dsaPrivKeyUser = userKeyChain.getPrivateKey("Key/DSA/2048/Main");
         //Ottengo la chiave pubblica Rsa della TSA dal file di chiavi pubbliche
-        PublicKey rsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/RSA/2048/Main");
-        //Calcolo digest del messaggio
-        MessageDigest md = null;
-        try {
-            md = MessageDigest.getInstance("SHA-256");
-        } catch (NoSuchAlgorithmException ex) {
-            System.out.println("Algoritmo non supportato");
-        }
-        BufferedInputStream is = new BufferedInputStream(new FileInputStream(documentFile));
-        DigestInputStream dis = new DigestInputStream(is, md);
-        while (dis.read() != -1);
-        byte[] msgDigest = md.digest();
-        
+        PublicKey rsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/RSA/2048/Main");      
         //Creo il Json con User Id e msgDigest
         JSONObject j = new JSONObject();
         j.put("UserID", userID);
-        j.put("MessageDigest", Base64.getEncoder().encodeToString(msgDigest));
+        j.put("MessageDigest", Base64.getEncoder().encodeToString(computeFileDigest(documentFile)));
         
         //Crea la richiesta
         TSAMessage req = new TSAMessage(j, dsaPrivKeyUser, rsaPubKeyTsa, "UserToTSA");
@@ -93,6 +81,20 @@ public class TimestampManager {
         if (requestsNumber == 8){
             this.processRequests();
         }
+    }
+    
+    private byte[] computeFileDigest(String documentFile) throws IOException{
+        MessageDigest md = null;
+        try {
+            md = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException ex) {
+            System.out.println("Algoritmo non supportato");
+        }
+        BufferedInputStream is = new BufferedInputStream(new FileInputStream(documentFile));
+        DigestInputStream dis = new DigestInputStream(is, md);
+        while (dis.read() != -1){};
+        byte[] msgDigest = md.digest();
+        return msgDigest;
     }
     
     /*Manda la map di richieste al server TSA e salva le risposte nella mappa
@@ -114,20 +116,20 @@ public class TimestampManager {
         
         PublicKey dsapublickey = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/DSA/2048/Main");
         Iterator<String> i = this.nomiFile.iterator();
-        BufferedWriter bw = null;
+        BufferedOutputStream bos = null;
         for(TSAMessage m: this.responses){
             String file = i.next();
             if (m != null){
                 try {
                     byteUtils.verifyText(m.getInfo(), m.getSign(), dsapublickey);
-                    bw = new BufferedWriter(new PrintWriter(file+".marca.enc"));
-                    bw.write(Base64.getEncoder().encodeToString(m.getInfo()));
+                    bos = new BufferedOutputStream(new FileOutputStream(file+".marca.enc"));
+                    bos.write(m.getInfo());
                 } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NotVerifiedSignException ex) {
                     System.out.println("Errore di firma per la marca associata al file: " +
                             file + ". La marca non verrà salvata.");
                 }finally{
-                    if (bw != null)
-                        bw.close();
+                    if (bos != null)
+                        bos.close();
                 }
             }
         }
@@ -136,27 +138,100 @@ public class TimestampManager {
     public void decryptTimestamp(String userKeychain, String encryptedTimestamp, char[] password) throws IOException{
         
         Keychain k = new Keychain(userKeychain, password);
-        byte[] plaintext = null;
         PrivateKey rsaprivKey = k.getPrivateKey("Key/RSA/2048/Main");
+        CipherInputStream cis = null;
+        String pathFile = encryptedTimestamp.replace(".enc", "");
+        JSONObject stamp = null;
         try{
             Cipher c = Cipher.getInstance("RSA/ECB/OAEPPadding");
             c.init(Cipher.DECRYPT_MODE, rsaprivKey);
-            CipherInputStream cis = new CipherInputStream(new FileInputStream(encryptedTimestamp), c);
-        } catch (InvalidKeyException ex) {
-            Logger.getLogger(TimestampManager.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchAlgorithmException ex) {
-            Logger.getLogger(TimestampManager.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (NoSuchPaddingException ex) {
-            Logger.getLogger(TimestampManager.class.getName()).log(Level.SEVERE, null, ex);
+            cis = new CipherInputStream(new FileInputStream(encryptedTimestamp), c);
+            String read = "";
+            byte [] buffer = new byte [1024];  
+            int r;  
+            while ((r = cis.read(buffer)) > 0) {  
+                read+=new String(buffer);
+            }
+            stamp = new JSONObject(read);
+        } catch (InvalidKeyException | NoSuchAlgorithmException | NoSuchPaddingException ex) {
+            System.out.println("Errore. Impossibile decifrare file.");
+            ex.printStackTrace();
+            System.exit(1);
+        }finally{
+            if(cis != null)
+                cis.close();
         }
-        
+        BufferedWriter bw = null;
+        try{
+            bw = new BufferedWriter(new FileWriter(pathFile));
+            bw.write(stamp.toString());
+        }finally{
+            bw.close();
+        }
     }
         
-    public boolean verifyOffline(String docFile, String marcaFile){    
-    
+    public boolean verifyOffline(String docFile, String marcaFile) throws IOException, NoSuchAlgorithmException{    
+        JSONObject marca = readStamp(marcaFile);
+        boolean verified = true;
+        if(verifyInitialTimestamp(docFile, marca.getString("TimeStamp"), marca.getString("TSADigest"))){
+            String[] info = marca.getString("VerificationInfo").split(",");
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            int i = 0;
+            byte[] result = Base64.getDecoder().decode(marca.getString("TSADigest"));
+            byte[] next = null;
+            while(i < info.length){
+                next = Base64.getDecoder().decode(info[i]);
+                i += 1;
+                if(info[i].compareTo("sx") == 0)
+                    md.update(byteUtils.arrayConcat(next, result));
+                else
+                    md.update(byteUtils.arrayConcat(result, next));
+                result = md.digest();
+                i += 1;          
+            }
+            if(Base64.getEncoder().encodeToString(result).compareTo(marca.getString("HashValue")) != 0)
+                verified = false;
+        }else
+            verified = false;
+        return verified;
     }
          
-    public boolean verifyOnline(String docFile, String marcaFile, String hashFile){
-        
+    public boolean verifyOnline(String docFile, String marcaFile, String hashFile) throws IOException, NoSuchAlgorithmException{
+        JSONObject marca = readStamp(marcaFile);
+        boolean verified = true;
+        if(verifyInitialTimestamp(docFile, marca.getString("TimeStamp"), marca.getString("TSADigest"))){
+            JSONObject hashValues = readHashValues(hashFile, marca.getInt("TimeFrame"));
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] shv_before = Base64.getDecoder().decode(hashValues.getString("SHVBefore"));
+            byte[] hv_i = Base64.getDecoder().decode(marca.getString("HashValue"));
+            md.update(byteUtils.arrayConcat(shv_before, hv_i));
+            if(hashValues.getString("SHVActual").compareTo(Base64.getEncoder().encodeToString(md.digest())) != 0)
+                verified = false;
+        }
+        else
+            verified = false;
+        return verified;        
+    }
+    
+    private JSONObject readStamp(String marcaFile) throws IOException{
+        byte[] encoded = Files.readAllBytes(Paths.get(marcaFile));
+        return new JSONObject(new String(encoded, "UTF8"));
+    }
+    
+    private JSONObject readHashValues(String hashFile, int timeframe) throws IOException{
+        JSONArray hashes = new JSONArray(new String(Files.readAllBytes(Paths.get(hashFile)),"UTF-8"));
+        JSONObject info = new JSONObject();
+        info.put("SHVBefore", hashes.getJSONObject(timeframe-1).getString("SuperHashValue"));
+        info.put("SHVActual", hashes.getJSONObject(timeframe).getString("SuperHashValue"));
+        return info;
+    }
+    
+    private boolean verifyInitialTimestamp(String docFile, String timeStamp, String TSADigest) throws IOException, NoSuchAlgorithmException{
+        byte[] docDigest = computeFileDigest(docFile);
+        byte[] timestamp = Base64.getDecoder().decode(timeStamp);
+        MessageDigest md = MessageDigest.getInstance("SHA-256");
+        md.update(byteUtils.arrayConcat(docDigest, timestamp));
+        String computedDigest = Base64.getEncoder().encodeToString(md.digest());
+        return computedDigest.compareTo(TSADigest) == 0;        
     }
 }

@@ -4,10 +4,9 @@
  * and open the template in the editor.
  */
 package sicurezza_progetto_3;
-import java.io.BufferedOutputStream;
-import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.sql.Timestamp;
@@ -49,7 +48,7 @@ public class TSA {
         this.timeframe = 0;
         this.hashValues = new JSONArray();
         this.TSAKeyChain = new Keychain("TSAKeyChain","TSAPassword".toCharArray());
-        this.md = MessageDigest.getInstance("SHA256");
+        this.md = MessageDigest.getInstance("SHA-256");
         computeHashValues();
     }
     
@@ -88,13 +87,16 @@ public class TSA {
     private JSONObject makeResponseInfo(JSONObject userInfo){  
         
         JSONObject responseInfo = new JSONObject();
-        responseInfo.put("TimeStamp", new Timestamp(System.currentTimeMillis()+10000).toString());
+        String t = new Timestamp(System.currentTimeMillis()+10000).toString(); 
+        responseInfo.put("TimeStamp", t);
         responseInfo.put("UserID", userInfo.getString("UserID"));
         responseInfo.put("SerialNumber", this.serialNumber);
         String messageDigest = userInfo.getString("MessageDigest");
         responseInfo.put("MessageDigest",messageDigest);
         byte[] userMessageDigest = Base64.getDecoder().decode(messageDigest);
-        this.md.update(userMessageDigest);
+        byte[] timestamp = Base64.getDecoder().decode(t);
+        this.mt.insert(userMessageDigest, timestamp);
+        this.md.update(byteUtils.arrayConcat(userMessageDigest, timestamp));
         responseInfo.put("TSADigest",Base64.getEncoder().encodeToString(this.md.digest()));
         responseInfo.put("TimeFrame", this.timeframe);
         return responseInfo;
@@ -118,7 +120,6 @@ public class TSA {
                     PublicKey dsapubKey = PublicKeysManager.getPublicKeysManager().getPublicKey(userInfo.getString("UserID"), "Key/DSA/2048/Main");
                     byteUtils.verifyText(decrypted, m.getSign(), dsapubKey);
                     JSONObject responseInfo = makeResponseInfo(userInfo);
-                    this.mt.insert(Base64.getDecoder().decode(userInfo.getString("MessageDigest")),responseInfo.getString("TimeStamp"));
                     partialResponses.add(responseInfo);
                     requestNumber += 1;
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
@@ -135,7 +136,8 @@ public class TSA {
             byte[] dummy = new byte[this.DUMMYSIZE];
             r.nextBytes(dummy);
             this.md.update(dummy);
-            this.mt.insert(this.md.digest(), new Timestamp(System.currentTimeMillis()+10000).toString());
+            String t = new Timestamp(System.currentTimeMillis()+10000).toString();
+            this.mt.insert(this.md.digest(), Base64.getDecoder().decode(t));
             requestNumber += 1;
         }
         return partialResponses;
@@ -147,7 +149,8 @@ public class TSA {
         ArrayList<TSAMessage> responses = new ArrayList<>();
             for(JSONObject j: partialResponses){
                 if (j != null){
-                    j.put("Verification Info", i.next());
+                    j.put("VerificationInfo", i.next());
+                    j.put("HashValue", getHashValue(this.timeframe));
                     PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("UserID"),"Key/RSA/2048/Main");
                     PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
                     responses.add(new TSAMessage(j, dsaprivkey , rsapubkey, "TSAToUser"));
@@ -178,7 +181,7 @@ public class TSA {
         this.hashValues.put(this.timeframe, j);
     }
     
-    public byte[] getHashValue(int timeframe){
+    public String getHashValue(int timeframe){
         
         if (timeframe == 0){
             System.out.println("Errore. Nessun Hash Value al timeframe 0.");
@@ -186,28 +189,25 @@ public class TSA {
         }
         else{
             JSONObject j = this.hashValues.getJSONObject(timeframe);
-            return Base64.getDecoder().decode(j.getString("HashValue"));
+            return j.getString("HashValue");
         }
     }
     
-    public byte[] getSuperHashValue(int timeframe){
+    public String getSuperHashValue(int timeframe){
         
         JSONObject j = this.hashValues.getJSONObject(timeframe);
-        return Base64.getDecoder().decode(j.getString("SuperHashValue"));
+        return j.getString("SuperHashValue");
     }   
     
     
     private void saveHashValues() throws IOException{
         
-        ObjectOutputStream oos = null;
+            BufferedWriter bw = null;
         try{
-        oos = new ObjectOutputStream(new BufferedOutputStream(new FileOutputStream("hashTSA")));
-        oos.writeObject(this.hashValues.toString());
-        oos.close(); 
+            bw = new BufferedWriter( new FileWriter("hashValues"));
+            bw.write(this.hashValues.toString());
         }finally{
-        if(oos!=null){
-            oos.close();
-            }  
+            bw.close();
         }
     }
 }

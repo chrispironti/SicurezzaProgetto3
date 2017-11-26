@@ -28,11 +28,11 @@ public class MerkleTree {
    public MerkleTree() throws NoSuchAlgorithmException{
     this.tree = new byte[15][];
     this.size = 0;
-    this.md = MessageDigest.getInstance("SHA256");
+    this.md = MessageDigest.getInstance("SHA-256");
 }
    
-   public void insert(byte[] elem, String timestamp){
-       this.md.update(byteUtils.arrayConcat(elem, Base64.getDecoder().decode(timestamp)));
+   public void insert(byte[] elem, byte[] timestamp){
+       this.md.update(byteUtils.arrayConcat(elem, timestamp));
        this.tree[this.size] = md.digest();
        this.size += 1;
    }
