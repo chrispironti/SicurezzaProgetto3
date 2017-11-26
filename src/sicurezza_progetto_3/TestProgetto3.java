@@ -23,7 +23,7 @@ import javax.crypto.NoSuchPaddingException;
  */
 public class TestProgetto3 {
     public static void main(String[] args) throws NoSuchAlgorithmException, IOException, InvalidKeyException, NoSuchPaddingException, BadPaddingException, UnsupportedEncodingException, SignatureException, IllegalBlockSizeException, NotVerifiedSignException{
-        Map<String, char[]> users = new HashMap<>();
+       /* Map<String, char[]> users = new HashMap<>();
         Map<String,String> filesChiaviPrivate = new HashMap<>();
         users.put("Caparezza", "prigioniero709".toCharArray());
         filesChiaviPrivate.put("Caparezza", "Caparezza.kc");
@@ -33,7 +33,7 @@ public class TestProgetto3 {
         filesChiaviPrivate.put("Mikimix", "Mikimix.kc");
         users.put("TSA","TSAPass".toCharArray());
         filesChiaviPrivate.put("TSA", "TSA.kc");
-        KeychainUtils.generateKeyPairs(users, "chiaviPub.txt", filesChiaviPrivate);
+        KeychainUtils.generateKeyPairs(users, "chiaviPub.txt", filesChiaviPrivate);*/
         
         TSA TSAserver = new TSA();
         TimestampManager tsm = new TimestampManager(TSAserver);

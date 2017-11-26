@@ -173,23 +173,23 @@ public class TimestampManager {
     public boolean verifyOffline(String docFile, String marcaFile) throws IOException, NoSuchAlgorithmException{    
         JSONObject marca = readStamp(marcaFile);
         boolean verified = true;
-        if(verifyInitialTimestamp(docFile, marca.getString("TimeStamp"), marca.getString("TSADigest"))){
-            String[] info = marca.getString("VerificationInfo").split(",");
+        if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
+            String[] info = marca.getString("VI").split(",");
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             int i = 0;
-            byte[] result = Base64.getDecoder().decode(marca.getString("TSADigest"));
+            byte[] result = Base64.getDecoder().decode(marca.getString("TSAD"));
             byte[] next = null;
             while(i < info.length){
                 next = Base64.getDecoder().decode(info[i]);
                 i += 1;
-                if(info[i].compareTo("sx") == 0)
+                if(info[i].compareTo("s") == 0)
                     md.update(byteUtils.arrayConcat(next, result));
                 else
                     md.update(byteUtils.arrayConcat(result, next));
                 result = md.digest();
                 i += 1;          
             }
-            if(Base64.getEncoder().encodeToString(result).compareTo(marca.getString("HashValue")) != 0)
+            if(Base64.getEncoder().encodeToString(result).compareTo(marca.getString("HV")) != 0)
                 verified = false;
         }else
             verified = false;
@@ -199,11 +199,11 @@ public class TimestampManager {
     public boolean verifyOnline(String docFile, String marcaFile, String hashFile) throws IOException, NoSuchAlgorithmException{
         JSONObject marca = readStamp(marcaFile);
         boolean verified = true;
-        if(verifyInitialTimestamp(docFile, marca.getString("TimeStamp"), marca.getString("TSADigest"))){
-            JSONObject hashValues = readHashValues(hashFile, marca.getInt("TimeFrame"));
+        if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
+            JSONObject hashValues = readHashValues(hashFile, marca.getInt("TF"));
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             byte[] shv_before = Base64.getDecoder().decode(hashValues.getString("SHVBefore"));
-            byte[] hv_i = Base64.getDecoder().decode(marca.getString("HashValue"));
+            byte[] hv_i = Base64.getDecoder().decode(marca.getString("HV"));
             md.update(byteUtils.arrayConcat(shv_before, hv_i));
             if(hashValues.getString("SHVActual").compareTo(Base64.getEncoder().encodeToString(md.digest())) != 0)
                 verified = false;

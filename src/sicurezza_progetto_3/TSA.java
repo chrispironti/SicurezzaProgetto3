@@ -88,18 +88,18 @@ public class TSA {
         
         JSONObject responseInfo = new JSONObject();
         String t = new Timestamp(System.currentTimeMillis()+10000).toString(); 
-        responseInfo.put("TimeStamp", t);
-        responseInfo.put("UserID", userInfo.getString("UserID"));
-        responseInfo.put("SerialNumber", this.serialNumber);
+        responseInfo.put("TS", t);
+        responseInfo.put("ID", userInfo.getString("UserID"));
+        responseInfo.put("SN", this.serialNumber);
         String messageDigest = userInfo.getString("MessageDigest");
-        responseInfo.put("MessageDigest",messageDigest);
+        responseInfo.put("MD",messageDigest);
         byte[] userMessageDigest = Base64.getDecoder().decode(messageDigest);
         //byte[] timestamp = Base64.getDecoder().decode(t);
         byte[] timestamp = t.getBytes();
         this.mt.insert(userMessageDigest, timestamp);
         this.md.update(byteUtils.arrayConcat(userMessageDigest, timestamp));
-        responseInfo.put("TSADigest",Base64.getEncoder().encodeToString(this.md.digest()));
-        responseInfo.put("TimeFrame", this.timeframe);
+        responseInfo.put("TSAD",Base64.getEncoder().encodeToString(this.md.digest()));
+        responseInfo.put("TF", this.timeframe);
         return responseInfo;
     }
     
@@ -150,9 +150,9 @@ public class TSA {
         ArrayList<TSAMessage> responses = new ArrayList<>();
             for(JSONObject j: partialResponses){
                 if (j != null){
-                    j.put("VerificationInfo", i.next());
-                    j.put("HashValue", getHashValue(this.timeframe));
-                    PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("UserID"),"Key/RSA/2048/Main");
+                    j.put("VI", i.next());
+                    j.put("HV", getHashValue(this.timeframe));
+                    PublicKey rsapubkey = PublicKeysManager.getPublicKeysManager().getPublicKey(j.getString("ID"),"Key/RSA/2048/Main");
                     PrivateKey dsaprivkey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
                     responses.add(new TSAMessage(j, dsaprivkey , rsapubkey, "TSAToUser"));
                 }else{

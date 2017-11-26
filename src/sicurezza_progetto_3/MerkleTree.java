@@ -42,9 +42,10 @@ public class MerkleTree {
        for(int i = 0; i < 14 ; i+=2){
            this.md.update(byteUtils.arrayConcat(tree[i],tree[i+1]));
            this.tree[j] = this.md.digest();
+           this.size = this.size + 1;
            j += 1;
        }
-       return tree[j]; //Ritorna la radice, cioè HVi
+       return tree[this.size - 1]; //Ritorna la radice, cioè HVi
    }
    
    
@@ -54,9 +55,9 @@ public class MerkleTree {
    ottenere il root hash value.*/
    public ArrayList<String> buildInfo(){
        ArrayList<String> info = new ArrayList<>();
-       String str1 = "dx";
-       String str2 = "dx";
-       String str3 = "dx";
+       String str1 = "d";
+       String str2 = "d";
+       String str3 = "d";
        for(int k = 0; k < 8; k ++){
            int sibling = sibling(k);
            int father = parent(k);
@@ -89,20 +90,20 @@ public class MerkleTree {
    
    private String evalpos1(int k){
        if(k%2 == 0)
-           return "dx";
-       return "sx";       
+           return "d";
+       return "s";       
    }
    
    private String evalpos2(int k){
        if(k == 2 || k == 3 || k >= 6)
-           return "sx";
-       return "dx";
+           return "s";
+       return "d";
    }
    
    private String evalpos3(int k){
        if (k >=4)
-           return "sx";
-       return "dx";
+           return "s";
+       return "d";
    }
    
    public int getSize(){
