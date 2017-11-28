@@ -36,14 +36,14 @@ public class TestProgetto3 {
         filesChiaviPrivate.put("TSA", "TSA.kc");
         KeychainUtils.generateKeyPairs(users, "chiaviPub.txt", filesChiaviPrivate);*/
         
-        TSA TSAserver = new TSA();
+        TSA TSAserver = new TSA("hashValues");
         TimestampManager tsm = new TimestampManager(TSAserver);
         
         
         
         //Genera richieste
         
-        /*
+        
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento1.txt");
         tsm.generateRequest("Caparezza.kc", "Caparezza", "prigioniero709".toCharArray(), "documenti/documento2.txt");
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento3.txt");
@@ -57,7 +57,7 @@ public class TestProgetto3 {
         tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/foto2.jpg");
         tsm.generateRequest("Michele.kc", "Michele", "alterego".toCharArray(), "documenti/documento8.txt");
         tsm.processRequests();
-        */
+        
         //Decifra marche
         /*
         tsm.decryptTimestamp("Mikimix.kc", "documenti/documento1.txt.marca.enc", "sanremo".toCharArray());
@@ -68,7 +68,9 @@ public class TestProgetto3 {
         tsm.decryptTimestamp("Mikimix.kc", "documenti/documento6.txt.marca.enc", "sanremo".toCharArray());
         tsm.decryptTimestamp("Mikimix.kc", "documenti/documento7.txt.marca.enc", "sanremo".toCharArray());
         tsm.decryptTimestamp("Mikimix.kc", "documenti/documento8.txt.marca.enc", "sanremo".toCharArray());*/
-        //Verifica online
+        
+        
+        //Verifiche
         System.out.println("----Primo Timestamp------");
         System.out.println("Verifica Offline true expected");
         System.out.println(tsm.verifyOffline("documenti/foto1.jpg", "documenti/foto1.jpg.marca.enc"));
@@ -82,8 +84,6 @@ public class TestProgetto3 {
         System.out.println(tsm.verifyChain("documenti/foto1.jpg", "documenti/foto1.jpg.marca.enc","hashValues"));
         System.out.println("Verifica Catena false expected (Hash Value Truccato)");
         System.out.println(tsm.verifyChain("documenti/foto1.jpg", "documenti/foto1.jpg.marca.enc","hashValuesContraffazione"));
-
-
         System.out.println("----Secondo Timestamp minore di 8------");
         System.out.println("Verifica Offline true expected");
         System.out.println(tsm.verifyOffline("documenti/foto2.jpg", "documenti/foto2.jpg.marca.enc"));
@@ -93,7 +93,21 @@ public class TestProgetto3 {
         System.out.println(tsm.verifyOnline("documenti/foto2.jpg", "documenti/foto2.jpg.marca.enc","hashValues"));
         System.out.println("Verifica Online false expected (Marca di un docuymento diverso)");
         System.out.println(tsm.verifyOnline("documenti/documento7.txt", "documenti/documento8.txt.marca.enc","hashValues"));
-
+        
+        
+        //Ripristino della computazione
+        TSA TSAserver2 = new TSA("hashValues","hashValues2");
+        TimestampManager tsm2 = new TimestampManager(TSAserver2);
+        
+        //Aprendo i file hashValues e hashValues2 si può notare come differiscano solo per gli ultimi due valori 
+        //di hash e superhash
+        //tsm.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento13.txt");
+        tsm2.generateRequest("Mikimix.kc", "Mikimix", "sanremo".toCharArray(), "documenti/documento14.txt");
+        //tsm.processRequests();
+        tsm2.processRequests();
+        
+        
+        
     }
 
     

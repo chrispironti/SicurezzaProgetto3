@@ -40,13 +40,15 @@ public class TSA {
     private MerkleTree mt; 
     //Pubblichiamo i valori di HV e SHV a ogni timeframe
     private JSONArray hashValues;
+    private String hashFile;
     private Keychain TSAKeyChain;
     private MessageDigest md;
     public final int DUMMYSIZE = 10;
 
     
-    public TSA() throws NoSuchAlgorithmException, IOException{
+    public TSA(String hashFileToWrite ) throws NoSuchAlgorithmException, IOException{
         this.serialNumber = 0;
+        this.hashFile=hashFileToWrite;
         this.timeframe = 0;
         this.hashValues = new JSONArray();
         this.TSAKeyChain = new Keychain("TSA.kc","TSAPass".toCharArray());
@@ -54,8 +56,9 @@ public class TSA {
         computeHashValues();
     }
     
-    public TSA(String hashFile) throws UnsupportedEncodingException, IOException, NoSuchAlgorithmException{
-        this.hashValues = new JSONArray(new String(Files.readAllBytes(Paths.get(hashFile)),"UTF-8"));
+    public TSA(String hashFileToRead,String hashFileToWrite ) throws UnsupportedEncodingException, IOException, NoSuchAlgorithmException{
+        this.hashValues = new JSONArray(new String(Files.readAllBytes(Paths.get(hashFileToRead)),"UTF-8"));
+        this.hashFile=hashFileToWrite;
         this.timeframe = this.hashValues.length() -1;
         this.serialNumber = 8*this.timeframe;
         this.TSAKeyChain = new Keychain("TSA.kc","TSAPass".toCharArray());
@@ -135,7 +138,7 @@ public class TSA {
                     partialResponses.add(responseInfo);
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
                     System.out.println("Errore. Impossibile processare richiesta numero " + requestNumber + 
-                            " del timeframe attuale. La richiesta verrà ignorata.");
+                            " del timeframe" +this.timeframe+". La richiesta verrà ignorata.");
                     partialResponses.add(null);
             }
         }
@@ -215,7 +218,7 @@ public class TSA {
         
             BufferedWriter bw = null;
         try{
-            bw = new BufferedWriter( new FileWriter("hashValues"));
+            bw = new BufferedWriter( new FileWriter(this.hashFile));
             bw.write(this.hashValues.toString());
         }finally{
             bw.close();
