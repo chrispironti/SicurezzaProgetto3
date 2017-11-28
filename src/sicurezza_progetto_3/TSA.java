@@ -8,6 +8,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.sql.Timestamp;
 import java.security.*;
@@ -52,6 +54,14 @@ public class TSA {
         computeHashValues();
     }
     
+    public TSA(String hashFile) throws UnsupportedEncodingException, IOException, NoSuchAlgorithmException{
+        this.hashValues = new JSONArray(new String(Files.readAllBytes(Paths.get(hashFile)),"UTF-8"));
+        this.timeframe = this.hashValues.length() -1;
+        this.serialNumber = 8*this.timeframe;
+        this.TSAKeyChain = new Keychain("TSA.kc","TSAPass".toCharArray());
+        this.md = MessageDigest.getInstance("SHA-256");
+    }
+    
     
     /*Il metodo riceve l'array di richieste a cui apporre il timestamp. Per ogni richiesta,
     decifra il contenuto (con la propria chiave privata RSA), verifica la firma (con la chiave pubblica DSA dell'utente),
@@ -75,7 +85,6 @@ public class TSA {
         
         this.mt = new MerkleTree();
         this.timeframe += 1;
-        JSONObject j = new JSONObject();
         ArrayList<JSONObject> partialResponses = createResponses(requests);
         computeHashValues();
         ArrayList<String> merkleInfo = mt.buildInfo();
@@ -87,7 +96,7 @@ public class TSA {
     private JSONObject makeResponseInfo(JSONObject userInfo){  
         
         JSONObject responseInfo = new JSONObject();
-        String t = new Timestamp(System.currentTimeMillis()+10000).toString(); 
+        String t = new Timestamp(System.currentTimeMillis()+10000*this.serialNumber).toString(); 
         responseInfo.put("TS", t);
         responseInfo.put("ID", userInfo.getString("UserID"));
         responseInfo.put("SN", this.serialNumber);
@@ -114,7 +123,9 @@ public class TSA {
         da completare con le informazioni derivanti dalla costruzione del Merkel Tree
         */
         for(TSAMessage m: requests){          
-                try{
+                
+            try{
+                    requestNumber += 1;
                     this.serialNumber += 1;
                     byte[] decrypted = c.doFinal(m.getInfo());
                     JSONObject userInfo = new JSONObject(new String(decrypted,"UTF8"));
@@ -122,7 +133,6 @@ public class TSA {
                     byteUtils.verifyText(decrypted, m.getSign(), dsapubKey);
                     JSONObject responseInfo = makeResponseInfo(userInfo);
                     partialResponses.add(responseInfo);
-                    requestNumber += 1;
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
                     System.out.println("Errore. Impossibile processare richiesta numero " + requestNumber + 
                             " del timeframe attuale. La richiesta verrà ignorata.");
@@ -133,13 +143,13 @@ public class TSA {
         state scartate), completa il merkel tree con nodi fittizi
         poi calcola HV e le info per ciascun utente. */
         Random r = new Random();
-        while (requestNumber < 8){
+        while (mt.getSize() < 8){
             byte[] dummy = new byte[this.DUMMYSIZE];
             r.nextBytes(dummy);
             this.md.update(dummy);
-            String t = new Timestamp(System.currentTimeMillis()+10000).toString();
+            String t = new Timestamp(System.currentTimeMillis()+10000*this.serialNumber).toString();
             this.mt.insert(this.md.digest(), t.getBytes("UTF8"));
-            requestNumber += 1;
+            this.serialNumber += 1;
         }
         return partialResponses;
     }

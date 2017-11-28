@@ -38,7 +38,8 @@ public class TSAMessage {
         }
         //Se trasmetto verso l'utente cifro il ciphertext. 
         if(direction.compareTo("TSAToUser") == 0){
-            encryptText(jBytes, rsaPublicKey);
+            //encryptText(jBytes, rsaPublicKey);
+            this.info=jBytes;
             signText(this.info, dsaPrivKey);
         }
     }
