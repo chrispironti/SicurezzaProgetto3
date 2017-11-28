@@ -8,9 +8,6 @@ package sicurezza_progetto_3;
 import java.io.*;
 import org.json.JSONObject;
 import java.security.*;
-import java.util.Base64;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.crypto.*;
 
 /**
@@ -27,32 +24,28 @@ public class TSAMessage {
     usando la propria chiave DSA privata, lo cifra con la chiave RSA pubblica 
     del server TSA, e lo converte in stringa mettendolo nel campo info .
     */
-    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey, String direction) throws IOException, BadPaddingException, ShortBufferException{
+    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey, PublicKey rsaPublicKey) throws IOException{
         //Costruisco il Json e ottengo i byte
         byte[] jBytes = byteFromJson(j);
-        //Se trasmetto verso il server TSA firmo il plaintext
-        if(direction.compareTo("UserToTSA") == 0){
-            signText(jBytes, dsaPrivKey);
-            encryptText(jBytes, rsaPublicKey);
-            
-        }
-        //Se trasmetto verso l'utente cifro il ciphertext. 
-        if(direction.compareTo("TSAToUser") == 0){
-            //encryptText(jBytes, rsaPublicKey);
-            this.info=jBytes;
-            signText(this.info, dsaPrivKey);
-        }
+        signText(jBytes, dsaPrivKey);
+        encryptText(jBytes, rsaPublicKey);
+    }
+    
+    public TSAMessage(JSONObject j, PrivateKey dsaPrivKey){
+        
+        byte[] jBytes = byteFromJson(j);
+        this.info=jBytes;
+        signText(this.info, dsaPrivKey);
     }
     
     private byte[] byteFromJson(JSONObject j){  
-        //Ottengo i byte dal Json
+        //Ottengo i byte dal JSON
         byte[] jBytes = null;
         try {
             jBytes = j.toString().getBytes("UTF8");
         } catch (UnsupportedEncodingException ex) {
             System.out.println("Encoding non supportato");
         }
-        
         return jBytes;
     }
     
@@ -69,17 +62,11 @@ public class TSAMessage {
         }
     }
     
-    private void encryptText(byte[] plainText, PublicKey RSAPubKey) throws ShortBufferException{
+    private void encryptText(byte[] plainText, PublicKey RSAPubKey){
         try {
             Cipher cipher = Cipher.getInstance("RSA/ECB/OAEPPadding");
             cipher.init(Cipher.ENCRYPT_MODE, RSAPubKey);
-            if(plainText.length < 214){
-                info = cipher.doFinal(plainText);
-            }else{
-            byte[] buffer = new byte[214];
-            cipher.update(plainText, 0, 214, buffer);
-            info = byteUtils.arrayConcat(buffer, cipher.doFinal());
-            }
+            info = cipher.doFinal(plainText);
         } catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | IllegalBlockSizeException | BadPaddingException e) {
                 e.printStackTrace();
                 System.exit(1);

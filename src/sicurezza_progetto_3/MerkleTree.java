@@ -11,16 +11,10 @@ import java.util.Base64;
 
 /**
  * Utilities per la gestione del Merkel_Tree.
- * La classe deve supportare l'inserimento dei digest di ciascun utente nel livello
- * più basso e poi calcolare il valore dei digest ai livelli più alti e ritornare
- * l'HV al chiamante.
- * La classe calcola anche le informazioni necessarie a ciascun utente su come
- * ricostruire l'HV.
- * Ho già pensato a una semplice implementazione basata su Array e buttato giù 
- * qualcosa a penna, niente di che. * 
  */
 public class MerkleTree {
-    
+   
+   private final String hashAlgorithm = "SHA-256";
    private byte[][] tree; //Array bidimensionale. Ogni elemento è un array di byte
    private int size;
    private MessageDigest md;
@@ -28,7 +22,7 @@ public class MerkleTree {
    public MerkleTree() throws NoSuchAlgorithmException{
     this.tree = new byte[15][];
     this.size = 0;
-    this.md = MessageDigest.getInstance("SHA-256");
+    this.md = MessageDigest.getInstance(this.hashAlgorithm);
 }
    
    public void insert(byte[] elem, byte[] timestamp){
@@ -48,11 +42,6 @@ public class MerkleTree {
        return tree[this.size - 1]; //Ritorna la radice, cioè HVi
    }
    
-   
-   /*Costruisce le informazioni per ciascun utente per poter verificare HV. Ritorna
-   un array di Arraylist, ove ogni elemento è un arraylist contenente tre tuple che,
-   nell'ordine, dicono con chi e in che posizione concatenare il proprio hash per
-   ottenere il root hash value.*/
    public ArrayList<String> buildInfo(){
        ArrayList<String> info = new ArrayList<>();
        String str1 = "d";

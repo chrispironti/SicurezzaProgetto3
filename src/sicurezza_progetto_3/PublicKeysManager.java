@@ -10,7 +10,6 @@ import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import org.json.JSONException;
@@ -31,7 +30,7 @@ public class PublicKeysManager {
     
     public static PublicKeysManager getPublicKeysManager() throws IOException{
         if(pkm == null){
-           pkm = new PublicKeysManager("chiaviPub.txt"); 
+           pkm = new PublicKeysManager("pubblici/chiaviPub.txt"); 
         }
         return pkm;
     }
