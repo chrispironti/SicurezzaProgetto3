@@ -37,7 +37,6 @@ public class Keychain {
         try{
             keytomodify=jKeyChain.getString(identifier);
         }catch(JSONException ex){
-            System.out.println("Errore chiave non presente!");
             return null;
         }
         byte[] decodedPrivKey=Base64.getDecoder().decode(keytomodify);
@@ -53,7 +52,6 @@ public class Keychain {
         try{
             return jKeyChain.getString(identifier);
         }catch(JSONException ex){
-            System.out.println("Errore password non presente");
             return null;
         }
     }

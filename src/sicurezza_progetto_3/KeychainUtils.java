@@ -80,6 +80,17 @@ public class KeychainUtils {
         }    
     }
     
+    public static void generateEmptyKeychain(char[] password, String fileChiaviPrivate) throws IOException{
+        SecureRandom random = new SecureRandom();
+        JSONObject keychain= new JSONObject();
+        byte salt[] = new byte[SALT_SIZE];
+	random.nextBytes(salt);
+        byte iv[]= new byte[IV_SIZE];
+        random.nextBytes(iv);
+        writeKeychain(keychain, salt, iv, password, fileChiaviPrivate);
+    }
+    
+    
     public static JSONObject decryptKeychain(char[] password, String fileChiaviPrivate, byte[] salt, byte[] iv) throws IOException{
         /*Decifra con AES 128 bit il file il cui percorso è passato come parametro, sovrascrivendolo.
         utilizza una password per generare la chiave di decifratura. Ritorna i byte del file decrittato.

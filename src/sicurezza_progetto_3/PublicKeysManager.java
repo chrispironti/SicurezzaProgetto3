@@ -40,14 +40,12 @@ public class PublicKeysManager {
         try{
         j = new JSONObject(jPubDatabase.getString(user));
         }catch(JSONException ex){
-            System.out.println("Errore Utente non presente!");
             return null;
         }
         byte[] decodedPubKey;
         try{
             decodedPubKey=Base64.getDecoder().decode(j.getString(keyId));
         }catch(JSONException ex){
-            System.out.println("Errore chiave non presente!");
             return null;
         }
         String[] parameters=keyId.split("/");
