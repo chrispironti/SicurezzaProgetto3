@@ -73,6 +73,18 @@ public class TimestampManager {
         JSONObject j = new JSONObject();
         j.put("ID", userID);
         j.put("MD", Base64.getEncoder().encodeToString(computeFileDigest(documentFile)));
+        //Da decommentare per testare situazioni in cui una richiesta non è valida e non viene processata da TSA
+        /*if(this.requests.size() == 1){    
+            KeyPairGenerator keyPairGenerator = null;
+            try {
+                keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+            } catch (NoSuchAlgorithmException ex) {
+                System.out.println("Errore, algoritmo non supportato");
+            }
+            keyPairGenerator.initialize(2048, new SecureRandom());
+            KeyPair falseKeys = keyPairGenerator.generateKeyPair();
+            rsaPubKeyTsa = falseKeys.getPublic();
+        }*/
         TSAMessage req = new TSAMessage(j, dsaPrivKeyUser, rsaPubKeyTsa);
         //Aggiunge la richiesta all'ArrayList
         requests.add(req);

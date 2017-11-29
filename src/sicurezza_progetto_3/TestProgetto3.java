@@ -9,7 +9,6 @@ import java.nio.file.*;
 import org.json.*;
 import java.util.*;
 
-
 public class TestProgetto3 {
     public static void main(String[] args) throws IOException, InterruptedException{
         System.out.println("Inizio Test.\n");

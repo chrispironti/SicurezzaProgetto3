@@ -30,7 +30,7 @@ public class TSA {
     private String hashFile;
     private Keychain TSAKeyChain;
     private MessageDigest md;
-    public final int DUMMYSIZE = 10;
+    private final int DUMMYSIZE = 10;
 
     
     public TSA(String hashFileToWrite) throws IOException{
@@ -85,7 +85,7 @@ public class TSA {
     private JSONObject makeResponseInfo(JSONObject userInfo){  
         
         JSONObject responseInfo = new JSONObject();
-        String t = new Timestamp(System.currentTimeMillis()+100000*this.serialNumber).toString(); 
+        String t = new Timestamp(System.currentTimeMillis()+10000*this.serialNumber).toString(); 
         responseInfo.put("TS", t);
         responseInfo.put("ID", userInfo.getString("ID"));
         responseInfo.put("SN", this.serialNumber);
@@ -131,7 +131,6 @@ public class TSA {
                     JSONObject responseInfo = makeResponseInfo(userInfo);
                     partialResponses.add(responseInfo);
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
-                    ex.printStackTrace();
                     System.out.println("Errore. Impossibile processare richiesta numero " + requestNumber + 
                             " del timeframe " +this.timeframe+". La richiesta verrà ignorata.");
                     partialResponses.add(null);
@@ -144,7 +143,7 @@ public class TSA {
             byte[] dummy = new byte[this.DUMMYSIZE];
             sr.nextBytes(dummy);
             this.md.update(dummy);
-            String t = new Timestamp(System.currentTimeMillis()+100000*this.serialNumber).toString();
+            String t = new Timestamp(System.currentTimeMillis()+10000*this.serialNumber).toString();
             this.mt.insert(this.md.digest(), t.getBytes("UTF8"));
             this.serialNumber += 1;
         }
