@@ -5,7 +5,6 @@
  */
 package sicurezza_progetto_3;
 import java.io.*;
-import java.nio.file.*;
 import java.security.*;
 import java.util.*;
 import org.json.JSONObject;
@@ -74,18 +73,7 @@ public class TimestampManager {
         JSONObject j = new JSONObject();
         j.put("ID", userID);
         j.put("MD", Base64.getEncoder().encodeToString(computeFileDigest(documentFile)));
-        TSAMessage req=null;
-        /*
-        //Da decommentare per testare una richiesta non valida in un lotto di richieste
-        if(requestsNumber==5){
-        SecureRandom random = new SecureRandom();
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("DSA");
-        keyPairGenerator.initialize(2048,random);
-        KeyPair DSAKeys = keyPairGenerator.generateKeyPair();
-        req = new TSAMessage(j, DSAKeys.getPrivate(), rsaPubKeyTsa, "UserToTSA");
-        }else*/
-        req = new TSAMessage(j, dsaPrivKeyUser, rsaPubKeyTsa);
-
+        TSAMessage req = new TSAMessage(j, dsaPrivKeyUser, rsaPubKeyTsa);
         //Aggiunge la richiesta all'ArrayList
         requests.add(req);
         this.nomiFile.add(documentFile);
@@ -157,93 +145,72 @@ public class TimestampManager {
         
         JSONObject marca = DTSUtils.readStamp(marcaFile);
         boolean verified = false;
-        if(verifyTSASign(marcaFile)){//Controllo firma TSA
-            /*Controllo che l'hash del documento, concatenato al timestamp
-            sia effettivamente uguale al digest calcolato dalla TSA*/
-            if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
-                String[] info = marca.getString("VI").split(",");
-                MessageDigest md = null;
-                try {
-                    md = MessageDigest.getInstance(this.hashAlgorithm);
-                } catch (NoSuchAlgorithmException ex) {
-                    ex.printStackTrace();
-                    System.exit(1);
-                }
-                int i = 0;
-                byte[] result = Base64.getDecoder().decode(marca.getString("TSAD"));
-                byte[] next = null;
-                while(i < info.length){
-                    next = Base64.getDecoder().decode(info[i]);
-                    i += 1;
-                    if(info[i].compareTo("s") == 0)
-                        md.update(DTSUtils.arrayConcat(next, result));
-                    else
-                        md.update(DTSUtils.arrayConcat(result, next));
-                    result = md.digest();
-                    i += 1;          
-                }
-                /*Se l'HV calcolato coincide con quello contenuto nella marca allora la verifica
-                è andata a buon fine*/
-                if(Base64.getEncoder().encodeToString(result).compareTo(marca.getString("HV")) == 0)
-                    verified = true;
+        /*Controllo che l'hash del documento, concatenato al timestamp
+        sia effettivamente uguale al digest calcolato dalla TSA*/
+        if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
+            String[] info = marca.getString("VI").split(",");
+            MessageDigest md = null;
+            try {
+                md = MessageDigest.getInstance(this.hashAlgorithm);
+            } catch (NoSuchAlgorithmException ex) {
+                ex.printStackTrace();
+                System.exit(1);
             }
+            int i = 0;
+            byte[] result = Base64.getDecoder().decode(marca.getString("TSAD"));
+            byte[] next = null;
+            while(i < info.length){
+                next = Base64.getDecoder().decode(info[i]);
+                i += 1;
+                if(info[i].compareTo("s") == 0)
+                    md.update(DTSUtils.arrayConcat(next, result));
+                else
+                    md.update(DTSUtils.arrayConcat(result, next));
+                result = md.digest();
+                i += 1;          
+            }
+            /*Se l'HV calcolato coincide con quello contenuto nella marca allora la verifica
+            è andata a buon fine*/
+            if(Base64.getEncoder().encodeToString(result).compareTo(marca.getString("HV")) == 0)
+                verified = true;
         }
         return verified;
     }
-         
-/*    public boolean verifyOnline(String docFile, String marcaFile, String hashFile) throws IOException, NoSuchAlgorithmException{
-        JSONObject marca = readStamp(marcaFile);
-        boolean verified = true;
-        if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
-            JSONObject hashValues = readHashValues(hashFile, marca.getInt("TF"));
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] shv_before = Base64.getDecoder().decode(hashValues.getString("SHVBefore"));
-            byte[] hv_i = Base64.getDecoder().decode(marca.getString("HV"));
-            md.update(byteUtils.arrayConcat(shv_before, hv_i));
-            if(hashValues.getString("SHVActual").compareTo(Base64.getEncoder().encodeToString(md.digest())) != 0)
-                verified = false;
-        }
-        else
-            verified = false;
-        return verified;        
-    }*/
-    
+           
     public boolean verifyOnline(String docFile, String marcaFile, String hashFile, int limit) throws IOException{
         
         boolean verified = false;
         JSONObject j;
         JSONObject marca = DTSUtils.readStamp(marcaFile);
-        if(verifyTSASign(marcaFile)){ //Controllo firma TSA
-            /*Controllo che l'hash del documento, concatenato al timestamp
-            sia effettivamente uguale al digest calcolato dalla TSA*/
-            if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
-                int timeframe=marca.getInt("TF");
-                JSONArray ja= DTSUtils.readHashValues(hashFile);
-                MessageDigest md = null;
-                try {
-                    md = MessageDigest.getInstance(this.hashAlgorithm);
-                } catch (NoSuchAlgorithmException ex) {
-                    ex.printStackTrace();
-                    System.exit(1);
-                }
-                limit = timeframe - limit;
-                if(limit < 0)
-                    limit = 1;
-                byte[] hv_i = null;
-                byte[] shv_before = null;
-                for(int i=limit;i<=timeframe;i++){
-                    j=ja.getJSONObject(i);
-                    shv_before = Base64.getDecoder().decode(ja.getJSONObject(i-1).getString("SuperHashValue"));
-                    hv_i = Base64.getDecoder().decode(j.getString("HashValue"));
-                    md.update(DTSUtils.arrayConcat(shv_before, hv_i));
-                    if(j.getString("SuperHashValue").compareTo(Base64.getEncoder().encodeToString(md.digest())) != 0)
-                        return false; //Se un elemento della catena non è valido, ritorna immediatamente false
-                }
-                if(Base64.getEncoder().encodeToString(hv_i).compareTo(marca.getString("HV")) == 0)
-                    /*Se HV(timeframe) coincide con l'HV contenuto nella marca ricevuta,
-                    allora la verifica è andata a buon fine*/
-                    verified = true; 
+        /*Controllo che l'hash del documento, concatenato al timestamp
+        sia effettivamente uguale al digest calcolato dalla TSA*/
+        if(verifyInitialTimestamp(docFile, marca.getString("TS"), marca.getString("TSAD"))){
+            int timeframe=marca.getInt("TF");
+            JSONArray ja= DTSUtils.readHashValues(hashFile);
+            MessageDigest md = null;
+            try {
+                md = MessageDigest.getInstance(this.hashAlgorithm);
+            } catch (NoSuchAlgorithmException ex) {
+                ex.printStackTrace();
+                System.exit(1);
             }
+            limit = timeframe - limit;
+            if(limit < 0)
+                limit = 1;
+            byte[] hv_i = null;
+            byte[] shv_before = null;
+            for(int i=limit;i<=timeframe;i++){
+                j=ja.getJSONObject(i);
+                shv_before = Base64.getDecoder().decode(ja.getJSONObject(i-1).getString("SuperHashValue"));
+                hv_i = Base64.getDecoder().decode(j.getString("HashValue"));
+                md.update(DTSUtils.arrayConcat(shv_before, hv_i));
+                if(j.getString("SuperHashValue").compareTo(Base64.getEncoder().encodeToString(md.digest())) != 0)
+                    return false; //Se un elemento della catena non è valido, ritorna immediatamente false
+            }
+            if(Base64.getEncoder().encodeToString(hv_i).compareTo(marca.getString("HV")) == 0)
+                /*Se HV(timeframe) coincide con l'HV contenuto nella marca ricevuta,
+                allora la verifica è andata a buon fine*/
+                verified = true; 
         }
         return verified;
     }
@@ -264,7 +231,7 @@ public class TimestampManager {
         return computedDigest.compareTo(TSADigest) == 0;        
     }
     
-    private boolean verifyTSASign(String marcaFile) throws IOException{
+    public boolean verifyTSASign(String marcaFile) throws IOException{
         
         JSONObject marca = DTSUtils.readStamp(marcaFile);
         byte[] sign = Base64.getDecoder().decode(marca.getString("TSASign")); 

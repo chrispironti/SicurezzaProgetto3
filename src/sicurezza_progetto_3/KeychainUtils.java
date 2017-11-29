@@ -13,10 +13,6 @@ import javax.crypto.*;
 import javax.crypto.spec.*;
 import org.json.*;
 
-/**
- *
- * DA MODIFICARE
- */
 public class KeychainUtils {
     
     public static final int IV_SIZE=16;

@@ -10,9 +10,7 @@ import org.json.JSONObject;
 import java.security.*;
 import javax.crypto.*;
 
-/**
 
- */
 public class TSAMessage {
     private byte[] info;
     private byte[] sign;

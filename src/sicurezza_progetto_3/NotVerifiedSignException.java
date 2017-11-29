@@ -5,10 +5,6 @@
  */
 package sicurezza_progetto_3;
 
-/**
- *
- * @author Daniele
- */
 public class NotVerifiedSignException extends Exception {
 
     public NotVerifiedSignException() {

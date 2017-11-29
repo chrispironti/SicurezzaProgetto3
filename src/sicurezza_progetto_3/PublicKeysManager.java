@@ -15,10 +15,7 @@ import java.util.Base64;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-/**
- *
- * @author gennaroavitabile
- */
+
 public class PublicKeysManager {
    
     private static PublicKeysManager  pkm = null;

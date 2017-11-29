@@ -16,10 +16,7 @@ import java.security.SignatureException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-/**
- *
- * @author Daniele
- */
+
 public class DTSUtils {
     
     public static byte[] arrayConcat(byte[] array1, byte[] array2){
@@ -44,14 +41,6 @@ public class DTSUtils {
         byte[] encoded = Files.readAllBytes(Paths.get(marcaFile));
         return new JSONObject(new String(encoded, "UTF8"));
     }
-    
-    /*private JSONObject readHashValues(String hashFile, int timeframe) throws IOException{
-        JSONArray hashes = new JSONArray(new String(Files.readAllBytes(Paths.get(hashFile)),"UTF-8"));
-        JSONObject info = new JSONObject();
-        info.put("SHVBefore", hashes.getJSONObject(timeframe-1).getString("SuperHashValue"));
-        info.put("SHVActual", hashes.getJSONObject(timeframe).getString("SuperHashValue"));
-        return info;
-    }*/
     
     public static JSONArray readHashValues(String hashFile) throws IOException{
         
