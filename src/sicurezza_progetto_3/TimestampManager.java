@@ -67,7 +67,7 @@ public class TimestampManager {
         Keychain userKeyChain = new Keychain(keychainFile, password);
         PrivateKey dsaPrivKeyUser = userKeyChain.getPrivateKey("Key/DSA/2048/Main");
         //Ottengo la chiave pubblica Rsa della TSA dal file di chiavi pubbliche
-        PublicKey rsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/RSA/1024/Main");
+        PublicKey rsaPubKeyTsa = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/RSA/2048/Main");
         //Creo il Json con User Id e msgDigest
         JSONObject j = new JSONObject();
         j.put("ID", userID);
@@ -133,7 +133,8 @@ public class TimestampManager {
             if (m != null){
                 try {
                     byteUtils.verifyText(m.getInfo(), m.getSign(), dsapublickey);
-                    bos = new BufferedOutputStream(new FileOutputStream("marche/"+file.split("/")[1]+".marca"));
+                    String[] newPath = file.split("/");
+                    bos = new BufferedOutputStream(new FileOutputStream("marche/"+newPath[newPath.length -1]+".marca"));
                     bos.write(m.getInfo());
                 } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NotVerifiedSignException ex) {
                     System.out.println("Errore di firma per la marca associata al file: " +

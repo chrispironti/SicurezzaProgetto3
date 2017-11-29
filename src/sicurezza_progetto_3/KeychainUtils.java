@@ -37,28 +37,32 @@ public class KeychainUtils {
             try{
                 KeyPairGenerator keyPairGenerator = null;
                 keyPairGenerator = KeyPairGenerator.getInstance("RSA");
-                keyPairGenerator.initialize(1024,random);
+                keyPairGenerator.initialize(1024, new SecureRandom());
                 KeyPair RSAKeys1024 = keyPairGenerator.generateKeyPair();
                 jpub.put("Key/RSA/1024/Main", Base64.getEncoder().encodeToString(RSAKeys1024.getPublic().getEncoded()));
                 jpriv.put("Key/RSA/1024/Main", Base64.getEncoder().encodeToString(RSAKeys1024.getPrivate().getEncoded()));
                 //Generazione chiavi RSA 2048
-                keyPairGenerator.initialize(2048,random);
+                keyPairGenerator.initialize(2048, new SecureRandom());
                 KeyPair RSAKeys2048 = keyPairGenerator.generateKeyPair();
                 jpub.put("Key/RSA/2048/Main", Base64.getEncoder().encodeToString(RSAKeys2048.getPublic().getEncoded()));
                 jpriv.put("Key/RSA/2048/Main", Base64.getEncoder().encodeToString(RSAKeys2048.getPrivate().getEncoded()));
                 //Generazione chiavi DSA 1024
                 keyPairGenerator = KeyPairGenerator.getInstance("DSA");
-                keyPairGenerator.initialize(1024,random);
+                keyPairGenerator.initialize(1024, new SecureRandom());
                 KeyPair DSAKeys1024 = keyPairGenerator.generateKeyPair();
                 jpub.put("Key/DSA/1024/Main", Base64.getEncoder().encodeToString(DSAKeys1024.getPublic().getEncoded()));
                 jpriv.put("Key/DSA/1024/Main", Base64.getEncoder().encodeToString(DSAKeys1024.getPrivate().getEncoded()));
                 //Generazione chiavi DSA 2048
-                keyPairGenerator.initialize(2048,random);
+                keyPairGenerator.initialize(2048, new SecureRandom());
                 KeyPair DSAKeys2048 = keyPairGenerator.generateKeyPair();
                 jpub.put("Key/DSA/2048/Main", Base64.getEncoder().encodeToString(DSAKeys2048.getPublic().getEncoded()));
                 jpriv.put("Key/DSA/2048/Main", Base64.getEncoder().encodeToString(DSAKeys2048.getPrivate().getEncoded()));
-                writeKeychain(jpriv, salt, iv, passwords.get(e.getKey()), e.getValue());
-                jPubDatabase.put(e.getKey(), jpub.toString());
+                char[] password = passwords.get(e.getKey());
+                if(password != null){
+                    writeKeychain(jpriv, salt, iv, passwords.get(e.getKey()), e.getValue());
+                    jPubDatabase.put(e.getKey(), jpub.toString());
+                }else
+                    System.out.println("Errore. L'utente non è presente in entrambe le mappe. La richiesta verrà ignorata.\n");
             }catch(NoSuchAlgorithmException ex){
                 ex.printStackTrace();
                 System.exit(1);

@@ -79,14 +79,13 @@ public class TSA {
         computeHashValues();
         ArrayList<String> merkleInfo = mt.buildInfo();
         saveHashValues();
-        return finalizeResponses(partialResponses, merkleInfo);
-        
+        return finalizeResponses(partialResponses, merkleInfo);  
     }
     
     private JSONObject makeResponseInfo(JSONObject userInfo){  
         
         JSONObject responseInfo = new JSONObject();
-        String t = new Timestamp(System.currentTimeMillis()+10000*this.serialNumber).toString(); 
+        String t = new Timestamp(System.currentTimeMillis()+100000*this.serialNumber).toString(); 
         responseInfo.put("TS", t);
         responseInfo.put("ID", userInfo.getString("ID"));
         responseInfo.put("SN", this.serialNumber);
@@ -103,7 +102,7 @@ public class TSA {
     
     private ArrayList<JSONObject> createResponses(ArrayList<TSAMessage> requests) throws IOException{
         
-        PrivateKey rsaprivKey = this.TSAKeyChain.getPrivateKey("Key/RSA/1024/Main");
+        PrivateKey rsaprivKey = this.TSAKeyChain.getPrivateKey("Key/RSA/2048/Main");
         ArrayList<JSONObject> partialResponses = new ArrayList<>();
         Cipher c = null;
         try {
@@ -145,7 +144,7 @@ public class TSA {
             byte[] dummy = new byte[this.DUMMYSIZE];
             sr.nextBytes(dummy);
             this.md.update(dummy);
-            String t = new Timestamp(System.currentTimeMillis()+10000*this.serialNumber).toString();
+            String t = new Timestamp(System.currentTimeMillis()+100000*this.serialNumber).toString();
             this.mt.insert(this.md.digest(), t.getBytes("UTF8"));
             this.serialNumber += 1;
         }
@@ -174,9 +173,9 @@ public class TSA {
         byte[] shv_i = null;
         JSONObject j = new JSONObject();
         if (this.timeframe == 0){
-            Random r = new Random();
+            SecureRandom sr = new SecureRandom();
             shv_i = new byte[this.DUMMYSIZE];
-            r.nextBytes(shv_i);
+            sr.nextBytes(shv_i);
         }else{
             byte[] hv = null;
             try {
