@@ -94,7 +94,7 @@ public class TSA {
         byte[] userMessageDigest = Base64.getDecoder().decode(messageDigest);
         byte[] timestamp = t.getBytes();
         this.mt.insert(userMessageDigest, timestamp);
-        this.md.update(byteUtils.arrayConcat(userMessageDigest, timestamp));
+        this.md.update(DTSUtils.arrayConcat(userMessageDigest, timestamp));
         responseInfo.put("TSAD",Base64.getEncoder().encodeToString(this.md.digest()));
         responseInfo.put("TF", this.timeframe);
         return responseInfo;
@@ -127,7 +127,7 @@ public class TSA {
                     byte[] decrypted = c.doFinal(m.getInfo());
                     JSONObject userInfo = new JSONObject(new String(decrypted,"UTF8"));
                     PublicKey dsapubKey = PublicKeysManager.getPublicKeysManager().getPublicKey(userInfo.getString("ID"), "Key/DSA/2048/Main");
-                    byteUtils.verifyText(decrypted, m.getSign(), dsapubKey);
+                    DTSUtils.verifyText(decrypted, m.getSign(), dsapubKey);
                     JSONObject responseInfo = makeResponseInfo(userInfo);
                     partialResponses.add(responseInfo);
                 } catch (IllegalBlockSizeException | BadPaddingException | SignatureException | UnsupportedEncodingException | NotVerifiedSignException | NoSuchAlgorithmException | InvalidKeyException ex) {
@@ -188,7 +188,7 @@ public class TSA {
             }
             String superHashValue = this.hashValues.getJSONObject(this.timeframe-1).getString("SuperHashValue");
             byte[] shv_before = Base64.getDecoder().decode(superHashValue);
-            shv_i = byteUtils.arrayConcat(shv_before, hv);
+            shv_i = DTSUtils.arrayConcat(shv_before, hv);
             j.put("HashValue", Base64.getEncoder().encodeToString(hv));
         }            
         this.md.update(shv_i);
@@ -217,7 +217,7 @@ public class TSA {
     
     private void saveHashValues() throws IOException{
         
-            BufferedWriter bw = null;
+        BufferedWriter bw = null;
         try{
             bw = new BufferedWriter( new FileWriter(this.hashFile));
             bw.write(this.hashValues.toString());

@@ -26,7 +26,7 @@ public class MerkleTree {
 }
    
    public void insert(byte[] elem, byte[] timestamp){
-       this.md.update(byteUtils.arrayConcat(elem, timestamp));
+       this.md.update(DTSUtils.arrayConcat(elem, timestamp));
        this.tree[this.size] = md.digest();
        this.size += 1;
    }
@@ -34,7 +34,7 @@ public class MerkleTree {
    public byte[] buildMerkleTree() throws NoSuchAlgorithmException{
        int j = 8;
        for(int i = 0; i < 14 ; i+=2){
-           this.md.update(byteUtils.arrayConcat(tree[i],tree[i+1]));
+           this.md.update(DTSUtils.arrayConcat(tree[i],tree[i+1]));
            this.tree[j] = this.md.digest();
            this.size = this.size + 1;
            j += 1;
