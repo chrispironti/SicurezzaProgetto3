@@ -74,7 +74,7 @@ public class TimestampManager {
         j.put("ID", userID);
         j.put("MD", Base64.getEncoder().encodeToString(computeFileDigest(documentFile)));
         //Da decommentare per testare situazioni in cui una richiesta non è valida e non viene processata da TSA
-        /*if(this.requests.size() == 1){    
+        /*if(this.requests.size() == 2){    
             KeyPairGenerator keyPairGenerator = null;
             try {
                 keyPairGenerator = KeyPairGenerator.getInstance("RSA");

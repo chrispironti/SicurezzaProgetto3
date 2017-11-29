@@ -54,8 +54,10 @@ public class TestProgetto3 {
         int verifyLimit = 10;
         JSONObject j = null;
         for(int i = 1; i <=14; i++){
-            j = DTSUtils.readStamp("marche/documento"+i+".txt.marca");
-            System.out.println("Timeframe: "+j.getInt("TF")+", Verifica "+i+": "+tsm.verifyOnline("documenti/documento"+i+".txt", "marche/documento"+i+".txt.marca", "pubblici/hashValues", verifyLimit));
+            try{
+                j = DTSUtils.readStamp("marche/documento"+i+".txt.marca");
+                System.out.println("Timeframe: "+j.getInt("TF")+", Verifica "+i+": "+tsm.verifyOnline("documenti/documento"+i+".txt", "marche/documento"+i+".txt.marca", "pubblici/hashValues", verifyLimit));
+            }catch(NoSuchFileException ex){}
         }
         j = DTSUtils.readStamp("marche/foto1.jpg.marca");
         System.out.println("Timeframe: "+j.getInt("TF")+", Verifica 15: "+tsm.verifyOnline("documenti/foto1.jpg", "marche/foto1.jpg.marca", "pubblici/hashValues", verifyLimit));
@@ -69,8 +71,10 @@ public class TestProgetto3 {
         //Verifiche offline:
         System.out.println("\nTest verifica offline, true expected\n");
         for(int i = 1; i <=14; i++){
-            j = DTSUtils.readStamp("marche/documento"+i+".txt.marca");
-            System.out.println("Timeframe: "+j.getInt("TF")+", Verifica "+i+": "+tsm.verifyOffline("documenti/documento"+i+".txt", "marche/documento"+i+".txt.marca"));
+            try{
+                j = DTSUtils.readStamp("marche/documento"+i+".txt.marca");
+                System.out.println("Timeframe: "+j.getInt("TF")+", Verifica "+i+": "+tsm.verifyOffline("documenti/documento"+i+".txt", "marche/documento"+i+".txt.marca"));
+            }catch(NoSuchFileException ex){}
         }
         j = DTSUtils.readStamp("marche/foto1.jpg.marca");
         System.out.println("Timeframe: "+j.getInt("TF")+", Verifica 15: "+tsm.verifyOffline("documenti/foto1.jpg", "marche/foto1.jpg.marca"));
