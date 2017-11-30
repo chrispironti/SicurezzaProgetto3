@@ -14,20 +14,6 @@ import org.json.JSONArray;
 /**
  * Il compito di questa classe è generare le richieste di Timestamp da inoltrare
  * al server TSA, ricevere i messaggi corrispondenti e verificarne la validità.
- * Viene generato l'hash associato al messaggio dell'utente i, si allega il suo ID,
- * viene firmato il tutto e poi cifrato.
- * Il server TSA genera il timestamp, lo firma e cifra la risposta. Una volta ricevuta viene valutata
- * la validità della firma apposta dal TSA, vengono usate le informazioni contenute
- * nel timestamp per controllare HV e SHV con il proprio hash, e infine viene firmato
- * il timestamp stesso, in maniera tale da proteggersi nel caso di scadenza di esso.
- * 
- * Supponiamo che in ogni timeframe inviamo al server una Map di richieste che deve gestire
- * tutte. Ogni elemento della Map è una stringa cifrata di un JSONObject contenente:
- * 1)IDUtente
- * 2)Hash del messaggio
- * 2)Algoritmo di firma
- * 3)Firma 
- * Lui ci risponde con una Map di risposte di cui dobbiamo verificare la validità.
  */
 
 public class TimestampManager {
@@ -50,16 +36,6 @@ public class TimestampManager {
         this.nomiFile = new ArrayList<>();
     }
     
-
-    /*Il metodo riceve un oggetto utente e il messaggio a cui vuole apporre la 
-    marca temporale. Il metodo genera l'hash di message e passa l'hash e 
-    l'oggetto User al costruttore di TSARequest. 
-    In TSARequest vengono inseriti in un JSONObject il quale viene firmato e cifrato. 
-    La TSARequest viene poi inserita nella map come chiave l'id dell'utente e come
-    valore l'oggetto TSARequest. Se un utente richiede più di una marca, le TSARequest
-    vengono salvate in un array. Se il numero di richieste ha raggiunto il numero
-    massimo consentito (8) chiama sendRequests.
-    */
     public void generateRequest(String keychainFile, String userID, char[] password, String documentFile) throws IOException{
         
         requestsNumber += 1;
@@ -73,7 +49,8 @@ public class TimestampManager {
         JSONObject j = new JSONObject();
         j.put("ID", userID);
         j.put("MD", Base64.getEncoder().encodeToString(computeFileDigest(documentFile)));
-        //Da decommentare per testare situazioni in cui una richiesta non è valida e non viene processata da TSA
+        //Da decommentare per testare situazioni in cui una richiesta non è 
+        //valida e non viene processata da TSA
         /*if(this.requests.size() == 2){    
             KeyPairGenerator keyPairGenerator = null;
             try {
@@ -109,10 +86,6 @@ public class TimestampManager {
         return msgDigest;
     }
     
-    /*Manda la map di richieste al server TSA e salva le risposte nella mappa
-    corrispondente della classe. Può essere chiamato in un qualunque momento dall'utente
-    o automaticamente da generateRequest quando il numero max di richieste è stato raggiunto.
-    */
     public void processRequests() throws IOException{ 
         
         responses=TSAServer.generateTimestamp(requests);      
@@ -123,10 +96,6 @@ public class TimestampManager {
         this.nomiFile= new ArrayList<>();
     }
 
-    /*
-    Lancia un'eccezione per l utente i-esimo se 
-    la sua marca non è verificata*/ 
-    /*Attenzione usa lista nomi file per salvarli*/
     public void processResponses() throws IOException{
         
         PublicKey dsapublickey = PublicKeysManager.getPublicKeysManager().getPublicKey("TSA", "Key/DSA/2048/Main");

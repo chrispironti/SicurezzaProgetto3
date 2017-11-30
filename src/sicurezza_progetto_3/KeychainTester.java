@@ -21,13 +21,7 @@ public class KeychainTester {
         // TODO code application logic here
         
         
-        Map<String, char[]> passwords= new HashMap<>();
-        Map<String, String> filesChiaviPrivate= new HashMap<>();
-        passwords.put("Caparezza", "prigioniero709".toCharArray());
-        filesChiaviPrivate.put("Caparezza", "keyring/Caparezza.kc");
-        passwords.put("Mikimix", "sanremo".toCharArray());
-        filesChiaviPrivate.put("Mikimix", "keyring/Mikimix.kc");
-        KeychainUtils.generateKeyPairs(passwords, "pubblici/chiaviPub.pub", filesChiaviPrivate);
+        KeychainUtils.generateEmptyKeychain("prigioniero709".toCharArray(), "keyring/Caparezza.kc");    
         
         //Aggiunta di password
         System.out.println("-----Aggiunte di password---------");
